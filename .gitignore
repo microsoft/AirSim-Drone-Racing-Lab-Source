@@ -384,5 +384,7 @@ ros/src/CMakeLists.txt
 docs/README.md
 build_docs/
 
-# api docs
+# api / api docs
 PythonClient/docs/_build
+PythonClient/airsimdroneracinglab.egg-info/
+PythonClient/env

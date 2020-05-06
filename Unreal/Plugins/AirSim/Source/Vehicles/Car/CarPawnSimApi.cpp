@@ -151,6 +151,11 @@ void CarPawnSimApi::updateCarControls()
     UAirBlueprintLib::LogMessageString("Target Gear: ", std::to_string(current_controls_.manual_gear), LogDebugLevel::Informational);
 }
 
+void CarPawnSimApi::setStateLogStatus(bool is_enabled)
+{
+    unused(is_enabled);
+}
+
 //*** Start: UpdatableState implementation ***//
 void CarPawnSimApi::resetImplementation()
 {

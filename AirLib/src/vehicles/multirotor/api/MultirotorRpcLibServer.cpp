@@ -98,7 +98,6 @@ namespace airlib
         (static_cast<rpc::server*>(getServer()))->bind("moveByManual", [&](float vx_max, float vy_max, float z_min, float duration, DrivetrainType drivetrain, const MultirotorRpcLibAdaptors::YawMode& yaw_mode, const std::string& vehicle_name) -> bool {
             return getVehicleApi(vehicle_name)->moveByManual(vx_max, vy_max, z_min, duration, drivetrain, yaw_mode.to());
         });
-
         (static_cast<rpc::server*>(getServer()))->bind("rotateToYaw", [&](float yaw, float timeout_sec, float margin, const std::string& vehicle_name) -> bool {
             return getVehicleApi(vehicle_name)->rotateToYaw(yaw, timeout_sec, margin);
         });
@@ -123,10 +122,45 @@ namespace airlib
         (static_cast<rpc::server*>(getServer()))->bind("moveByRC", [&](const MultirotorRpcLibAdaptors::RCData& data, const std::string& vehicle_name) -> void {
             getVehicleApi(vehicle_name)->moveByRC(data.to());
         });
-
         (static_cast<rpc::server*>(getServer()))->bind("setSafety", [&](uint enable_reasons, float obs_clearance, const SafetyEval::ObsAvoidanceStrategy& obs_startegy, float obs_avoidance_vel, const MultirotorRpcLibAdaptors::Vector3r& origin, float xy_length, float max_z, float min_z, const std::string& vehicle_name) -> bool {
             return getVehicleApi(vehicle_name)->setSafety(SafetyEval::SafetyViolationType(enable_reasons), obs_clearance, obs_startegy, obs_avoidance_vel, origin.to(), xy_length, max_z, min_z);
         });
+
+
+        // ADRL //
+        (static_cast<rpc::server*>(getServer()))->
+            bind("setTrajectoryTrackerGains", [&](const vector<float>& gains, const std::string& vehicle_name) -> void {
+                getVehicleApi(vehicle_name)->setTrajectoryTrackerGains(gains);
+        });
+        (static_cast<rpc::server*>(getServer()))->
+            bind("clearTrajectory", [&](const std::string& vehicle_name) -> void {
+            getVehicleApi(vehicle_name)->clearTrajectory();
+        });
+        (static_cast<rpc::server*>(getServer()))->
+            bind("moveOnSpline", [&](const vector<MultirotorRpcLibAdapators::Vector3r>& path, 
+                    bool add_position_constraint, bool add_velocity_constraint, bool add_acceleration_constraint, 
+                    float vel_max, float acc_max, 
+                    bool viz_traj, const vector<float>& viz_traj_color_rgba, 
+                    bool replan_from_lookahead, float replan_lookahead_sec, const std::string& vehicle_name) -> bool {
+                vector<Vector3r> conv_path;
+                MultirotorRpcLibAdapators::to(path, conv_path);
+                return getVehicleApi(vehicle_name)->moveOnSpline(conv_path, add_position_constraint, add_velocity_constraint, add_acceleration_constraint, 
+                    vel_max, acc_max, viz_traj, viz_traj_color_rgba, replan_from_lookahead, replan_lookahead_sec);
+        });
+        (static_cast<rpc::server*>(getServer()))->
+            bind("moveOnSplineVelConstraints", [&](const vector<MultirotorRpcLibAdapators::Vector3r>& path, const vector<MultirotorRpcLibAdapators::Vector3r>& velocities, 
+                    bool add_position_constraint, bool add_velocity_constraint, bool add_acceleration_constraint, 
+                    float vel_max, float acc_max, 
+                    bool viz_traj, const vector<float>& viz_traj_color_rgba, 
+                    bool replan_from_lookahead, float replan_lookahead_sec, const std::string& vehicle_name) -> bool {
+                vector<Vector3r> conv_path;
+                vector<Vector3r> conv_velocities;
+                MultirotorRpcLibAdapators::to(path, conv_path);
+                MultirotorRpcLibAdapators::to(velocities, conv_velocities);
+                return getVehicleApi(vehicle_name)->moveOnSplineVelConstraints(conv_path, conv_velocities, add_position_constraint, add_velocity_constraint, add_acceleration_constraint, 
+                    vel_max, acc_max, viz_traj, viz_traj_color_rgba, replan_from_lookahead, replan_lookahead_sec);
+        });
+        // ADRL //
 
         //getters
         // Rotor state

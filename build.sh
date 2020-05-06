@@ -2,6 +2,8 @@
 
 # get path of current script: https://stackoverflow.com/a/39340259/207661
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+airsim_root_dir="${PWD}"
+deps_dir="${PWD}/AirLib/deps"
 pushd "$SCRIPT_DIR"  >/dev/null
 
 set -e
@@ -31,6 +33,61 @@ if [ ! -d "./external/rpclib/$RPC_VERSION_FOLDER" ]; then
     echo "ERROR: new version of AirSim requires newer rpclib."
     echo "please run setup.sh first and then run build.sh again."
     exit 1
+fi
+
+# variable for build output
+build_dir=build_debug
+if [ "$(uname)" == "Darwin" ]; then
+    export CC=/usr/local/opt/llvm@8/bin/clang
+    export CXX=/usr/local/opt/llvm@8/bin/clang++
+else
+    export CC="clang-8"
+    export CXX="clang++-8"
+fi
+# install moveOnSpline components
+if [ ! -d "./external/gflags_airsim" ]; then 
+    echo "gflags_airsim missing for moveOnSpline!"
+    exit 1
+else
+    # install gflags
+    echo "installing gflags"
+    cd external/gflags_airsim; 
+    mkdir -p build; cd build;
+    cmake ..; make;
+    mkdir -p ${deps_dir}/gflagslib/lib;
+    cp lib/libgflags.a ${deps_dir}/gflagslib/lib;
+    cp -r include ${deps_dir}/gflagslib;
+    cd ${airsim_root_dir};
+fi
+
+if [ ! -d "./external/glog_airsim" ]; then 
+    echo "glog_airsim missing for moveOnSpline!"
+    exit 1
+else
+    # install glog
+    echo "installing glog"
+    cd external/glog_airsim;
+    mkdir -p build; cd build;
+    cmake ..; make;
+    mkdir -p ${deps_dir}/gloglib/lib; mkdir -p ${deps_dir}/gloglib/include;
+    cp libglog.a ${deps_dir}/gloglib/lib;
+    cp -r glog ${deps_dir}/gloglib/include;
+    cd ${airsim_root_dir};
+fi
+
+if [ ! -d "./external/nlopt_airsim" ]; then 
+    echo "nlopt_airsim missing for moveOnSpline!"
+    exit 1
+else
+    # install nlopt
+    echo "installing nlopt"
+    cd external/nlopt_airsim; 
+    mkdir -p build; cd build;
+    cmake ..; make;
+    mkdir -p ${deps_dir}/nloptlib/lib;
+    cp libnlopt.a ${deps_dir}/nloptlib/lib
+    cp -r ../include ${deps_dir}/nloptlib/include
+    cd ${airsim_root_dir};
 fi
 
 # check for local cmake build created by setup.sh

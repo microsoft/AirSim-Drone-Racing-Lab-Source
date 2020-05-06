@@ -10,6 +10,7 @@
 #include "common/CommonStructs.hpp"
 #include "common/common_utils/UniqueValueMap.hpp"
 #include "MultirotorPawnEvents.h"
+#include "Logger.h"
 #include <future>
 
 class MultirotorPawnSimApi : public PawnSimApi
@@ -27,7 +28,7 @@ public:
 public:
     virtual void initialize() override;
 
-    virtual ~MultirotorPawnSimApi() = default;
+    virtual ~MultirotorPawnSimApi();
 
     //VehicleSimApiBase interface
     //implements game interface to update pawn
@@ -54,6 +55,8 @@ public:
     {
         return vehicle_api_.get();
     }
+
+    virtual void setStateLogStatus(bool is_enabled) override;
 
 private:
     std::unique_ptr<msr::airlib::MultirotorApiBase> vehicle_api_;
@@ -85,4 +88,14 @@ private:
     Pose last_phys_pose_; //for trace lines showing vehicle path
     std::vector<std::string> vehicle_api_messages_;
     RotorStates rotor_states_;
+
+    void writeStatetoFile();
+    std::string createStateHeaderLine();
+    void startStateLogging();
+    void stopStateLogging();
+    bool getStateLogStatus();
+   
+    std::unique_ptr<FileLogger> state_logger_;
+    bool state_log_status_ = false;
+    std::string log_folderpath_;
 };

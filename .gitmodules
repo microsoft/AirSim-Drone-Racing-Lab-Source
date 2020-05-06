@@ -1,0 +1,9 @@
+[submodule "external/glog_airsim"]
+	path = external/glog_airsim
+	url = bizair@vs-ssh.visualstudio.com:v3/bizair/Research/glog_airsim
+[submodule "external/gflags_airsim"]
+	path = external/gflags_airsim
+	url = bizair@vs-ssh.visualstudio.com:v3/bizair/Research/gflags_airsim
+[submodule "external/nlopt_airsim"]
+	path = external/nlopt_airsim
+	url = bizair@vs-ssh.visualstudio.com:v3/bizair/Research/nlopt_airsim

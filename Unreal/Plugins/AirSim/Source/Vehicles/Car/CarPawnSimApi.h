@@ -49,6 +49,7 @@ public:
 
 protected:
     virtual void resetImplementation() override;
+    virtual void setStateLogStatus(bool is_enabled) override;
 
 private:
     void createVehicleApi(ACarPawn* pawn, const msr::airlib::GeoPoint& home_geopoint);

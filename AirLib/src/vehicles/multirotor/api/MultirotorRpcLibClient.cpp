@@ -257,6 +257,52 @@ __pragma(warning(disable : 4239))
 
             return this;
         }
+
+
+        void MultirotorRpcLibClient::clearTrajectory(const std::string& vehicle_name)
+        {
+            static_cast<rpc::client*>(getClient())->call("clearTrajectory", vehicle_name);
+        }
+
+        MultirotorRpcLibClient* MultirotorRpcLibClient::moveOnSplineAsync(const vector<Vector3r>& path, 
+            bool add_position_constraint, bool add_velocity_constraint, bool add_acceleration_constraint, 
+            float vel_max, float acc_max, 
+            bool viz_traj, const vector<float>& viz_traj_color_rgba, 
+            bool replan_from_lookahead, float replan_lookahead_sec, const std::string& vehicle_name)
+        {
+            vector<MultirotorRpcLibAdapators::Vector3r> conv_path;
+            MultirotorRpcLibAdapators::from(path, conv_path);
+            pimpl_->last_future = static_cast<rpc::client*>(getClient())->async_call("moveOnSpline", conv_path, 
+                add_position_constraint, add_velocity_constraint, add_acceleration_constraint, 
+                vel_max, acc_max, 
+                viz_traj, viz_traj_color_rgba, 
+                replan_from_lookahead, replan_lookahead_sec, vehicle_name);
+            return this;
+        }
+
+        MultirotorRpcLibClient* MultirotorRpcLibClient::moveOnSplineVelConstraintsAsync(const vector<Vector3r>& path, const vector<Vector3r>& velocities, 
+            bool add_position_constraint, bool add_velocity_constraint, bool add_acceleration_constraint, 
+            float vel_max, float acc_max, 
+            bool viz_traj, const vector<float>& viz_traj_color_rgba, 
+            bool replan_from_lookahead, float replan_lookahead_sec, const std::string& vehicle_name)
+        {
+            vector<MultirotorRpcLibAdapators::Vector3r> conv_path;
+            vector<MultirotorRpcLibAdapators::Vector3r> conv_velocities;
+            MultirotorRpcLibAdapators::from(path, conv_path);
+            MultirotorRpcLibAdapators::from(velocities, conv_velocities);
+            pimpl_->last_future = static_cast<rpc::client*>(getClient())->async_call("moveOnSplineVelConstraints", conv_path, conv_velocities, 
+                add_position_constraint, add_velocity_constraint, add_acceleration_constraint, 
+                vel_max, acc_max, 
+                viz_traj, viz_traj_color_rgba, 
+                replan_from_lookahead, replan_lookahead_sec, vehicle_name);
+            return this;
+        }
+
+        void MultirotorRpcLibClient::setTrajectoryTrackerGains(const vector<float>& gains, const std::string& vehicle_name)
+        {
+            static_cast<rpc::client*>(getClient())->call("setTrajectoryTrackerGains", gains, vehicle_name);
+        }
+
     }
 } //namespace
 

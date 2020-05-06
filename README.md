@@ -1,8 +1,39 @@
+
+## Building ADRL on Linux
+- Building ADRL is similar to [building AirSim](https://microsoft.github.io/AirSim/build_linux.html), apart from a couple of 3rd party libs. 
+- [Setup ssh keys for Azure DevOps](https://docs.microsoft.com/en-us/azure/devops/repos/git/use-ssh-keys-to-authenticate?view=azure-devops)
+- In the `git clone` step, let's clone it with submodules:
+  ```
+  git clone --recurse-submodules -j8 bizair@vs-ssh.visualstudio.com:v3/bizair/Research/airsim_drone_racing_lab
+  ```
+  - We need to check out the `linux-autobuild` branch in 3 submodules:
+    ```
+    cd external/gflags_airsim;
+    git checkout linux-autobuild;
+    cd ../;
+    cd external/glog_airsim;
+    git checkout linux-autobuild;
+    cd external/nlopt_airsim;
+    git checkout linux-autobuild;
+    ```
+  
+  - Now, we can carry on with the normal process of building AirSim on linux. 
+     let's proceed with first building AirLib;
+    ```
+    cd airsim_drone_racing_lab;
+    ./setup.sh;
+    ./build.sh;
+    ```
+
+  - [then setup unreal environment](https://microsoft.github.io/AirSim/build_linux.html#build-unreal-environment)
+
+
 ## Last announcement
 
 The AirSim team is trying to get a better understanding of how AirSim and other simulation engines are being used across the community. If you have a couple of minutes, please take a look and respond to the AirSim survey as it does have an impact on the features and direction of the platform:
 
 [Survey link](https://forms.office.com/Pages/ResponsePage.aspx?id=v4j5cvGGr0GRqy180BHbR4J_69QtqUREtdPd5aLYTsFURDJPQUFSNDI3T0VENzJHUjVQVkpVWlRFNC4u)
+
 
 # Welcome to AirSim
 

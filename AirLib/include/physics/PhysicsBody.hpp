@@ -124,6 +124,24 @@ namespace airlib
             }
         }
 
+        void reset_everything_minus_position()
+        {
+            UpdatableObject::reset();
+
+            wrench_ = Wrench::zero();
+            collision_info_ = CollisionInfo();
+            collision_response_ = CollisionResponse();
+            grounded_ = false;
+
+            //update individual vertices
+            for (uint vertex_index = 0; vertex_index < wrenchVertexCount(); ++vertex_index) {
+                getWrenchVertex(vertex_index).reset();
+            }
+            for (uint vertex_index = 0; vertex_index < dragVertexCount(); ++vertex_index) {
+                getDragVertex(vertex_index).reset();
+            }
+        }
+
         virtual void update() override
         {
             UpdatableObject::update();

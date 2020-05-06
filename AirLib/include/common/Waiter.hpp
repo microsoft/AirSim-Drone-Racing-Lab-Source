@@ -54,13 +54,23 @@ namespace airlib
             return is_complete_;
         }
 
-        bool isTimeout() const
-        {
-            if (isComplete())
-                return false;
-            else
-                return clock()->elapsedSince(proc_start_) >= timeout_sec_;
-        }
+    bool isTimeout() const
+    {
+        if (isComplete())
+            return false;
+        else
+    	    return clock()->elapsedSince(proc_start_) >= timeout_sec_;
+    }
+
+    // moveOnSpline
+	bool isCancelled() const
+	{
+		return cancelable_action_.isCancelled();
+	}
+private:
+    TTimeDelta sleep_duration_, timeout_sec_;
+    CancelToken& cancelable_action_;
+    bool is_complete_; //each waiter should maintain its own complete status
 
     private:
         TTimeDelta sleep_duration_, timeout_sec_;

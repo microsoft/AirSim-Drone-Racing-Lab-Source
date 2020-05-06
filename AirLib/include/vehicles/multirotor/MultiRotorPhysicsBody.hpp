@@ -66,6 +66,16 @@ namespace airlib
         }
         //*** End: UpdatableState implementation ***//
 
+        // todo is this buggy? neurips reset
+        void reset_everything_minus_position()
+        {
+            //reset rotors, kinematics and environment
+            PhysicsBody::reset_everything_minus_position();
+
+            //reset sensors last after their ground truth has been reset
+            resetSensors();
+        }
+
         //Fast Physics engine calls this method to set next kinematics
         virtual void updateKinematics(const Kinematics::State& kinematics) override
         {

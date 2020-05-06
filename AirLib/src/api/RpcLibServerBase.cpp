@@ -429,8 +429,38 @@ namespace airlib
             return getWorldSimApi()->getSettingsString();
         });
 
+        //// ADRL Race API
+
+        pimpl_->server.bind("simGetObjectScaleInternal", [&](const std::string& object_name) -> RpcLibAdapatorsBase::Vector3r {
+            const auto& scale = getWorldSimApi()->getObjectScaleInternal(object_name);
+            return RpcLibAdapatorsBase::Vector3r(scale);
+        });
+        pimpl_->server.bind("simLogMultirotorState", [&](bool is_enabled, const std::string& vehicle_name) -> void {
+            getVehicleSimApi(vehicle_name)->setStateLogStatus(is_enabled);
+        });
+
+        pimpl_->server.bind("simStartRace", [&](int tier) -> void { 
+            getWorldSimApi()->startRace(tier); 
+        });
+        pimpl_->server.bind("simStartBenchmarkRace", [&](int tier) -> void {
+            getWorldSimApi()->startBenchmarkRace(tier);
+        });
+        pimpl_->server.bind("simResetRace", [&]() -> void {
+            getWorldSimApi()->resetRace();
+        });
+        pimpl_->server.bind("simDisableRaceLog", [&]() -> void {
+            getWorldSimApi()->disableRaceLogging();
+        });
+        pimpl_->server.bind("simGetDisqualified", [&](const std::string &racer_name) -> bool {
+            return getWorldSimApi()->getDisqualified(racer_name);
+        });
+        pimpl_->server.bind("simGetLastGatePassed", [&](const std::string &racer_name) -> int {
+            return getWorldSimApi()->getLastGatePassed(racer_name);
+        });
+
         //if we don't suppress then server will bomb out for exceptions raised by any method
         pimpl_->server.suppress_exceptions(true);
+
     }
 
     //required for pimpl

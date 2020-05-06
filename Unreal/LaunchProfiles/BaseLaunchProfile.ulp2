@@ -1,0 +1,122 @@
+{
+	"Version": 27,
+	"Id": "9334E1604D6649E26AA2458A47E9E3ED",
+	"Name": "Base Profile",
+	"Description": "Cooks the base game",
+	"BuildConfiguration": 3,
+	"ProjectSpecified": false,
+	"ShareableProjectPath": "",
+	"CookConfiguration": 3,
+	"CookIncremental": false,
+	"CookOptions": "",
+	"CookMode": 1,
+	"CookUnversioned": true,
+	"CookedCultures": [
+		"en"
+	],
+	"CookedMaps": [
+		"Blocks",
+		"MainMenu"
+	],
+	"CookedPlatforms": [
+		""
+	],
+	"DeployStreamingServer": false,
+	"DeployWithUnrealPak": true,
+	"DeployedDeviceGroupId": "16F45E5C08D6FA44A4B20D78DC51EC7A",
+	"DeploymentMode": 0,
+	"HideFileServerWindow": false,
+	"LaunchMode": 2,
+	"PackagingMode": 1,
+	"PackageDir": "",
+	"BuildGame": true,
+	"ForceClose": true,
+	"Timeout": 60,
+	"Compressed": true,
+	"EncryptIniFiles": false,
+	"ForDistribution": false,
+	"DeployPlatform": "None",
+	"NumCookersToSpawn": 0,
+	"SkipCookingEditorContent": false,
+	"DeployIncremental": false,
+	"GeneratePatch": false,
+	"AddPatchLevel": false,
+	"StageBaseReleasePaks": false,
+	"DLCIncludeEngineContent": false,
+	"CreateReleaseVersion": true,
+	"CreateReleaseVersionName": "1.0",
+	"BasedOnReleaseVersionName": "",
+	"CreateDLC": false,
+	"DLCName": "",
+	"GenerateChunks": false,
+	"GenerateHttpChunkData": false,
+	"HttpChunkDataDirectory": "",
+	"HttpChunkDataReleaseName": "",
+	"Archive": false,
+	"ArchiveDirectory": "",
+	"AdditionalCommandLineParameters": "",
+	"IncludePrerequisites": false,
+	"DefaultRole":
+	{
+		"AssignedDevice": "",
+		"CommandLine": "",
+		"DeviceId": "",
+		"InitialCulture": "en",
+		"InitialMapName": "",
+		"Name": "DefaultRole",
+		"InstanceType": 2,
+		"VsyncEnabled": false
+	},
+	"scripts": [
+		{
+			"script": "BuildCookRun",
+			"project": "",
+			"noP4": true,
+			"nocompile": false,
+			"nocompileeditor": false,
+			"ue4exe": "UE4Editor",
+			"utf8output": true,
+			"clientconfig": [
+				"Development"
+			],
+			"serverconfig": [
+				"Development"
+			],
+			"platform": [
+				""
+			],
+			"targetplatform": "",
+			"cmdline":
+			{
+				"": "",
+				"messaging": true
+			},
+			"device": [],
+			"addcmdline":
+			{
+				"sessionid": "440CB8E808D6FAE422AF880084F519E5",
+				"sessionowner": "airsim",
+				"sessionname": "Base Profile"
+			},
+			"map": [
+				"Blocks",
+				"MainMenu"
+			],
+			"build": true,
+			"cook": true,
+			"unversionedcookedcontent": true,
+			"pak": true,
+			"createreleaseversion": "1.0",
+			"generatepatch": false,
+			"manifests": false,
+			"iterativecooking": false,
+			"iteratesharedcookedbuild": false,
+			"skipcookingeditorcontent": false,
+			"compressed": true,
+			"EncryptIniFiles": false,
+			"ForDistribution": false,
+			"stage": true,
+			"package": true
+		}
+	]
+}

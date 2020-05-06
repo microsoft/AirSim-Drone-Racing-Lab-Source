@@ -84,6 +84,7 @@ void ASimModeBase::toggleLoadingScreen(bool is_visible)
 void ASimModeBase::BeginPlay()
 {
     Super::BeginPlay();
+    plot_multirotor_trajectory_start_ctr_ = 0; // moveOnSpline viz
 
     debug_reporter_.initialize(false);
     debug_reporter_.reset();
@@ -353,6 +354,8 @@ void ASimModeBase::Tick(float DeltaSeconds)
     drawLidarDebugPoints();
 
     drawDistanceSensorDebugPoints();
+
+    plot_multirotor_trajectory(); // moveOnSpline viz
 
     Super::Tick(DeltaSeconds);
 }
@@ -690,6 +693,9 @@ void ASimModeBase::setupVehiclesAndCamera()
                 getApiProvider()->makeDefaultVehicle(vehicle_name);
 
             vehicle_sim_apis_.push_back(std::move(vehicle_sim_api));
+            TArray<FBatchedLine> lines;
+            traj_lines_.push_back(lines);
+            traj_changed_.push_back(false);
         }
     }
 
@@ -871,5 +877,118 @@ void ASimModeBase::drawDistanceSensorDebugPoints()
                 }
             }
         }
+    }
+}
+
+// moveOnSpline viz
+// linebatcher->drawlines() is apparently most efficient
+// see unreal_engine/drawdebughelpers.cpp::DrawDebugCircle https://github.com/EpicGames/UnrealEngine/blob/release/Engine/Source/Runtime/Engine/Private/DrawDebugHelpers.cpp#L403
+// https://answers.unrealengine.com/questions/73788/whats-the-most-efficient-way-to-draw-a-bunch-of-li.html?sort=oldest
+void ASimModeBase::plot_multirotor_trajectory()
+{
+    if (plot_multirotor_trajectory_start_ctr_ < 500) 
+    {
+        // std::cout << plot_multirotor_trajectory_start_ctr_ << std::endl;
+        plot_multirotor_trajectory_start_ctr_++;
+        return;
+    }
+
+    if (getApiProvider() == nullptr)
+        return;
+
+    bool flushed_once = false;
+    int pawn_idx = 0;
+
+    for (auto& sim_api : getApiProvider()->getVehicleSimApis())
+    {
+        PawnSimApi* pawn_sim_api = static_cast<PawnSimApi*>(sim_api);
+        std::string vehicle_name = pawn_sim_api->getVehicleName();
+        msr::airlib::VehicleApiBase* vehicle_api = getApiProvider()->getVehicleApi(vehicle_name);
+        MultirotorApiBase* multirotor_api = static_cast<MultirotorApiBase*>(vehicle_api);
+
+        // first, flush all traj lines if any multirotor's traj has changed. 
+        if (multirotor_api != nullptr)
+        {
+            // hackmax with public members
+            if (multirotor_api->curr_traj_viz_idx_ > 0)
+            {
+                // last_traj_viz_idx_ is always trailing curr_traj_viz_idx_ by 1 as latter is incremented in multirotorapibase.cpp
+                if ((multirotor_api->viz_traj_) && (multirotor_api->last_traj_viz_idx_ != multirotor_api->curr_traj_viz_idx_))
+                {
+                    traj_changed_[pawn_idx] = true;
+
+                    // std::cout << "FIRST changed " << vehicle_name << "last " << multirotor_api->last_traj_viz_idx_ << "curr " << multirotor_api->curr_traj_viz_idx_ << std::endl;
+                    // std::cout << "spline changed " << vehicle_name << "last " << multirotor_api->last_traj_viz_idx_ << "curr " << multirotor_api->curr_traj_viz_idx_ << std::endl;
+                    if(!flushed_once)
+                    {
+                        // std::cout << "flush all viz traj" << std::endl;
+                        FlushPersistentDebugLines(this->GetWorld()); // flush all previous traj lines as of now
+                        flushed_once = true;
+                    }
+                    multirotor_api->last_traj_viz_idx_ = multirotor_api->curr_traj_viz_idx_;
+                }
+                else
+                {
+                    traj_changed_[pawn_idx] = false;
+                }
+            }
+        }
+        pawn_idx++;
+    }
+
+    if (flushed_once)
+    {
+        const float coordinate_axis_size = 25.0; 
+        pawn_idx = 0;
+        for (auto& sim_api : getApiProvider()->getVehicleSimApis())
+        {
+            PawnSimApi* pawn_sim_api = static_cast<PawnSimApi*>(sim_api);
+            std::string vehicle_name = pawn_sim_api->getVehicleName();
+            msr::airlib::VehicleApiBase* vehicle_api = getApiProvider()->getVehicleApi(vehicle_name);
+            MultirotorApiBase* multirotor_api = static_cast<MultirotorApiBase*>(vehicle_api);
+
+            if (multirotor_api != nullptr)
+            {
+                if ((multirotor_api->curr_traj_viz_idx_ > 0) && (multirotor_api->viz_traj_) && traj_changed_[pawn_idx])
+                {
+                    // RGBA of spline color 
+                    FLinearColor color{ multirotor_api->viz_traj_color_rgba_[0], multirotor_api->viz_traj_color_rgba_[1], 
+                                        multirotor_api->viz_traj_color_rgba_[2], multirotor_api->viz_traj_color_rgba_[3] };
+
+                    // std::cout << "SECOND changed " << vehicle_name << "last " << multirotor_api->last_traj_viz_idx_ << "curr " << multirotor_api->curr_traj_viz_idx_ << std::endl;
+                    traj_lines_[pawn_idx].Empty();
+                    for(int traj_idx=0; traj_idx < multirotor_api->curr_traj_viz_.size()-1; traj_idx++)
+                    {
+
+                        traj_lines_[pawn_idx].Add(FBatchedLine(pawn_sim_api->getNedTransform().fromLocalNed(multirotor_api->curr_traj_viz_[traj_idx]), 
+                            pawn_sim_api->getNedTransform().fromLocalNed(multirotor_api->curr_traj_viz_[traj_idx+1]), 
+                            color, -1, 1, 0));
+                    }
+
+                    // ref https://github.com/EpicGames/UnrealEngine/blob/release/Engine/Source/Runtime/Engine/Private/DrawDebugHelpers.cpp#L304
+                    // put the debug coordinates' lines in linebatcher at once for efficient plotting. 
+                    // DrawDebugCoordinateSystem is not ideal. 
+                    for(int waypoint_idx=0; waypoint_idx < multirotor_api->curr_traj_viz_tf_.size(); waypoint_idx++)
+                    {
+                        FRotationMatrix R(FRotator::ZeroRotator);
+                        FVector const X = R.GetScaledAxis( EAxis::X );
+                        FVector const Y = R.GetScaledAxis( EAxis::Y );
+                        FVector const Z = R.GetScaledAxis( EAxis::Z );
+                        FVector AxisLoc = pawn_sim_api->getNedTransform().fromLocalNed(multirotor_api->curr_traj_viz_tf_[waypoint_idx]);
+                        traj_lines_[pawn_idx].Add(FBatchedLine(AxisLoc, AxisLoc + X*coordinate_axis_size, FColor::Red, -1, 2, 0));
+                        traj_lines_[pawn_idx].Add(FBatchedLine(AxisLoc, AxisLoc + Y*coordinate_axis_size, FColor::Green, -1, 2, 0));
+                        traj_lines_[pawn_idx].Add(FBatchedLine(AxisLoc, AxisLoc + Z*coordinate_axis_size, FColor::Blue, -1, 2, 0));
+                    }
+                }
+            }
+            pawn_idx++;
+        }
+
+        TArray<FBatchedLine> combined;
+        for (auto& lines : traj_lines_)
+        {
+            combined += lines;
+        }
+        this->GetWorld()->PersistentLineBatcher->DrawLines(combined);
     }
 }

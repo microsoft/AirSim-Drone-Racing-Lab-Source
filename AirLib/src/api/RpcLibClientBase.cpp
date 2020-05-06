@@ -542,6 +542,45 @@ __pragma(warning(disable : 4239))
         {
             return &pimpl_->client;
         }
+        
+        //  ADRL:
+        msr::airlib::Vector3r RpcLibClientBase::simGetObjectScaleInternal(const std::string& object_name) const
+        {
+            return pimpl_->client.call("simGetObjectScaleInternal", object_name).as<RpcLibAdapatorsBase::Vector3r>().to();
+        }
+
+        void RpcLibClientBase::simLogMultirotorState(bool is_enabled, const std::string& vehicle_name) const
+        {
+            pimpl_->client.call("simLogMultirotorState", is_enabled, vehicle_name);
+        }
+
+
+        // Race API
+        void RpcLibClientBase::simStartRace(int tier)
+        {
+            pimpl_->client.call("simStartRace", tier);
+        }
+
+        void RpcLibClientBase::simStartBenchmarkRace(int tier)
+        {
+            pimpl_->client.call("simStartBenchmarkRace", tier);
+        }
+
+        bool RpcLibClientBase::simGetDisqualified(const std::string& racer_name)
+        {
+            return pimpl_->client.call("simGetDisqualified", racer_name).as<bool>();
+        }
+
+        int RpcLibClientBase::simGetLastGatePassed(const std::string& racer_name)
+        {
+            return pimpl_->client.call("simGetLastGatePassed", racer_name).as<int>();
+        }
+
+        void RpcLibClientBase::simResetRace()
+        {
+            pimpl_->client.call("simResetRace");
+        }
+
     }
 } //namespace
 

@@ -34,6 +34,8 @@ public:
 
     virtual void setWind(const msr::airlib::Vector3r& wind) const override;
 
+    virtual void setWind(const msr::airlib::Vector3r& wind) const override;
+
 protected:
     void startAsyncUpdator();
     void stopAsyncUpdator();

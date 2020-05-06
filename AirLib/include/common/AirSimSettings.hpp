@@ -1093,6 +1093,15 @@ namespace airlib
             }
         }
 
+        {
+            // Wind Settings
+            Settings child_json;
+            if (settings_json.getChild("Wind", child_json)) {
+                wind = createVectorSetting(child_json, wind);
+            }
+        }
+    }
+
         static void initializeSubwindowSettings(std::vector<SubwindowSetting>& subwindow_settings)
         {
             subwindow_settings.clear();

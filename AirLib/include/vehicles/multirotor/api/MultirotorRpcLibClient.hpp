@@ -71,10 +71,24 @@ namespace airlib
 
         virtual ~MultirotorRpcLibClient(); //required for pimpl
 
+        // moveOnSpline 
+        MultirotorRpcLibClient* moveOnSplineAsync(const vector<Vector3r>& path, 
+            bool add_position_constraint, bool add_velocity_constraint, bool add_acceleration_constraint, 
+            float vel_max, float acc_max, 
+            bool viz_traj, const vector<float>& viz_traj_color_rgba, 
+            bool replan_from_lookahead, float replan_lookahead_sec, const std::string& vehicle_name = "");
+        MultirotorRpcLibClient* moveOnSplineVelConstraintsAsync(const vector<Vector3r>& path, const vector<Vector3r>& velocities, 
+            bool add_position_constraint, bool add_velocity_constraint, bool add_acceleration_constraint, 
+            float vel_max, float acc_max, 
+            bool viz_traj, const vector<float>& viz_traj_color_rgba, 
+            bool replan_from_lookahead, float replan_lookahead_sec, const std::string& vehicle_name = "");
+        void clearTrajectory(const std::string& vehicle_name = "");
+        void setTrajectoryTrackerGains(const vector<float>& gains, const std::string& vehicle_name = "");
+
     private:
         struct impl;
         std::unique_ptr<impl> pimpl_;
-    };
-}
-} //namespace
+};
+
+}} //namespace
 #endif

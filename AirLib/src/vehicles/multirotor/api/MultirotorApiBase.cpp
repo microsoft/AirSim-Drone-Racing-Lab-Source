@@ -909,6 +909,799 @@ namespace airlib
         unused(risk_dist);
         return max_obs_avoidance_vel;
     }
+
+    void MultirotorApiBase::setTrajectoryTrackerGains(const vector<float>& gains)
+    {
+        curr_traj_viz_idx_ = 0; //todo where exactly? maybe in initialize pawn / simpleflight params()
+        last_traj_viz_idx_ = 0;
+        viz_traj_color_rgba_.resize(4, 0.0);
+
+        traj_tracker_gains_.kp_cross_track = gains[0];
+        traj_tracker_gains_.kd_cross_track = gains[1];
+        traj_tracker_gains_.kp_vel_cross_track = gains[2];
+        traj_tracker_gains_.kd_vel_cross_track = gains[3];
+
+        traj_tracker_gains_.kp_along_track = gains[4];
+        traj_tracker_gains_.kd_along_track = gains[5];
+        traj_tracker_gains_.kp_vel_along_track = gains[6];
+        traj_tracker_gains_.kd_vel_along_track = gains[7];
+
+        traj_tracker_gains_.kp_z_track = gains[8];
+        traj_tracker_gains_.kd_z_track = gains[9];
+        traj_tracker_gains_.kp_vel_z = gains[10];
+        traj_tracker_gains_.kd_vel_z = gains[11];
+
+        traj_tracker_gains_.kp_yaw = gains[12];
+        traj_tracker_gains_.kd_yaw = gains[13];
+    }
+
+    void MultirotorApiBase::clearTrajTrackingControllerErrorState()
+    {
+        traj_tracker_error_state_.prev_cross_track_error = 0.0;
+        traj_tracker_error_state_.prev_along_track_error = 0.0;
+        traj_tracker_error_state_.prev_z_error = 0.0;
+        traj_tracker_error_state_.prev_velocity_cross_track_error = 0.0;
+        traj_tracker_error_state_.prev_velocity_along_path_error = 0.0;
+        traj_tracker_error_state_.prev_velocity_z_error = 0.0;
+        traj_tracker_error_state_.prev_yaw_error = 0.0;
+    }
+
+    void MultirotorApiBase::clearTrajectory()
+    {
+        double duration_vel_cmd = 1.0 / 50.0;
+        double timeout_sec = 1.0 / 50.0;
+        YawMode adj_yaw_mode;
+        moveByVelocityInternal(0.0, 0.0, 0.0, adj_yaw_mode);
+        traj_cleared_ = true;
+        cancelLastTask();
+        curr_traj_.clear();
+        has_traj_ = false;
+        viz_traj_ = false;
+    }
+
+    void MultirotorApiBase::fit_trajectory(const vector<Vector3r>& path,
+                                            bool add_position_constraint,
+                                            bool add_velocity_constraint,
+                                            bool add_acceleration_constraint,
+                                            float vel_max,
+                                            float acc_max,
+                                            bool replan_from_lookahead)
+    {
+        SingleTaskCall lock(this);
+
+        // todo error checking
+        // if (path.size() < 1) // 1, as we'll add odometry to the beginning
+        // {
+            // return false;
+        // }
+
+        constexpr int N = 10;
+        constexpr int D = 3;
+        // todo expose this as function param. 
+        int derivative_to_optimize = mav_trajectory_generation::derivative_order::JERK;
+        mav_trajectory_generation::Trajectory trajectory;
+        curr_traj_viz_tf_.clear();
+
+        if (has_traj_ && replan_from_lookahead)
+        {
+            mav_trajectory_generation::Vertex::Vector vertices(path.size() + 1, mav_trajectory_generation::Vertex(D));
+            auto lookahead_point = curr_traj_[replan_lookahead_idx_];
+
+            Eigen::Vector3d lookahead_position_eigen(lookahead_point.position_W[0], lookahead_point.position_W[1], lookahead_point.position_W[2]);
+            vertices.front().makeStartOrEnd(lookahead_position_eigen, derivative_to_optimize);
+            curr_traj_viz_tf_.push_back(Vector3r(lookahead_position_eigen[0], lookahead_position_eigen[1], lookahead_position_eigen[2]));
+
+            if (add_velocity_constraint)
+            {
+                Eigen::Vector3d lookahead_velocity_eigen(lookahead_point.velocity_W[0], lookahead_point.velocity_W[1], lookahead_point.velocity_W[2]);
+                vertices.front().addConstraint(mav_trajectory_generation::derivative_order::VELOCITY, lookahead_velocity_eigen);
+            }
+
+            if (add_acceleration_constraint)
+            {
+                Eigen::Vector3d lookahead_acceleration_eigen(lookahead_point.acceleration_W[0], lookahead_point.acceleration_W[1], lookahead_point.acceleration_W[2]);
+                vertices.front().addConstraint(mav_trajectory_generation::derivative_order::ACCELERATION, lookahead_acceleration_eigen);
+            }
+
+            // Add last.
+            Eigen::Vector3d last_eigen(path.back().x(), path.back().y(), path.back().z());
+
+            vertices.back().makeStartOrEnd(last_eigen, derivative_to_optimize);
+
+            // Now do the middle bits.
+            /// note that i is starting from 0 (unlike the "else" clause, coz the 1st vertex is the lookahead point)
+            size_t j = 1;
+            for (size_t i = 0; i < path.size() - 1; i += 1)
+            {
+                Eigen::Vector3d curr_xyz(path[i].x(), path[i].y(), path[i].z());
+                curr_traj_viz_tf_.push_back(path[i]);
+                vertices[j].addConstraint(mav_trajectory_generation::derivative_order::POSITION, curr_xyz);
+                j++;
+            }
+            curr_traj_viz_tf_.push_back(path.back());
+
+            std::vector<double> segment_times = mav_trajectory_generation::estimateSegmentTimes(vertices, vel_max, acc_max);
+
+            bool optimize_time = true;
+            if (optimize_time)
+            {
+                mav_trajectory_generation::NonlinearOptimizationParameters nlopt_parameters;
+                nlopt_parameters.algorithm = nlopt::LD_LBFGS;
+                nlopt_parameters.time_alloc_method = mav_trajectory_generation::NonlinearOptimizationParameters::kMellingerOuterLoop;
+                nlopt_parameters.print_debug_info_time_allocation = false;
+                mav_trajectory_generation::PolynomialOptimizationNonLinear<N> nlopt(D, nlopt_parameters);
+                nlopt.setupFromVertices(vertices, segment_times, derivative_to_optimize);
+                nlopt.addMaximumMagnitudeConstraint(mav_trajectory_generation::derivative_order::VELOCITY, vel_max);
+                nlopt.addMaximumMagnitudeConstraint(mav_trajectory_generation::derivative_order::ACCELERATION, acc_max);
+                nlopt.optimize();
+                nlopt.getTrajectory(trajectory);
+            }
+            else
+            {
+                mav_trajectory_generation::PolynomialOptimization<N> opt(D);
+                opt.setupFromVertices(vertices, segment_times, derivative_to_optimize);
+                opt.solveLinear();
+                opt.getTrajectory(trajectory);
+            }
+        }
+        else
+        {
+            vector<Vector3r> path_internal = path; // todo if I am copying and modding with if-else, passing by const ref is stupid. but want to copy and be safe. 
+            if (add_position_constraint)
+            {
+                auto curr_odom_position = getKinematicsEstimated().pose.position;
+                path_internal.insert(path_internal.begin(), curr_odom_position);
+            }
+
+            Eigen::Vector3d first_eigen(path_internal.front().x(), path_internal.front().y(), path_internal.front().z());
+            Eigen::Vector3d last_eigen(path_internal.back().x(), path_internal.back().y(), path_internal.back().z());
+            curr_traj_viz_tf_.push_back(path_internal.front());
+
+            int num_vertices = path_internal.size();
+
+            mav_trajectory_generation::Vertex::Vector vertices(num_vertices, mav_trajectory_generation::Vertex(D));
+
+            // Add first.
+            vertices.front().makeStartOrEnd(first_eigen, derivative_to_optimize);
+
+            if (add_velocity_constraint)
+            {
+                auto curr_odom_velocity = getKinematicsEstimated().twist.linear;
+                Eigen::Vector3d curr_odom_velocity_eigen(curr_odom_velocity.x(), curr_odom_velocity.y(), curr_odom_velocity.z());
+                vertices.front().addConstraint(mav_trajectory_generation::derivative_order::VELOCITY, curr_odom_velocity_eigen);
+            }
+            if (add_acceleration_constraint)
+            {
+                auto curr_odom_accel = getKinematicsEstimated().accelerations.linear;
+                Eigen::Vector3d curr_odom_accel_eigen(curr_odom_accel.x(), curr_odom_accel.y(), curr_odom_accel.z());
+                vertices.front().addConstraint(mav_trajectory_generation::derivative_order::ACCELERATION, curr_odom_accel_eigen);
+            }
+
+            // Add last.
+            vertices.back().makeStartOrEnd(last_eigen, derivative_to_optimize);
+
+            // Now do the middle bits.
+            size_t j = 1;
+            for (size_t i = 1; i < path_internal.size() - 1; i += 1)
+            {
+                curr_traj_viz_tf_.push_back(path_internal[i]);
+                Eigen::Vector3d curr_xyz(path_internal[i].x(), path_internal[i].y(), path_internal[i].z());
+                vertices[j].addConstraint(mav_trajectory_generation::derivative_order::POSITION, curr_xyz);
+                j++;
+            }
+            curr_traj_viz_tf_.push_back(path_internal.back());
+
+            std::vector<double> segment_times = mav_trajectory_generation::estimateSegmentTimes(vertices, vel_max, acc_max);
+
+            bool optimize_time = true;
+            if (optimize_time)
+            {
+                mav_trajectory_generation::NonlinearOptimizationParameters nlopt_parameters;
+                nlopt_parameters.algorithm = nlopt::LD_LBFGS;
+                nlopt_parameters.time_alloc_method = mav_trajectory_generation::NonlinearOptimizationParameters::kMellingerOuterLoop;
+                nlopt_parameters.print_debug_info_time_allocation = false;
+                mav_trajectory_generation::PolynomialOptimizationNonLinear<N> nlopt(D, nlopt_parameters);
+                nlopt.setupFromVertices(vertices, segment_times, derivative_to_optimize);
+                nlopt.addMaximumMagnitudeConstraint(mav_trajectory_generation::derivative_order::VELOCITY, vel_max);
+                nlopt.addMaximumMagnitudeConstraint(mav_trajectory_generation::derivative_order::ACCELERATION, acc_max);
+                nlopt.optimize();
+                nlopt.getTrajectory(trajectory);
+            }
+            else
+            {
+                mav_trajectory_generation::PolynomialOptimization<N> opt(D);
+                opt.setupFromVertices(vertices, segment_times, derivative_to_optimize);
+                opt.solveLinear();
+                opt.getTrajectory(trajectory);
+            }
+        }
+        
+
+
+        // double v_max, a_max;
+        // trajectory.computeMaxVelocityAndAcceleration(&v_max, &a_max);
+        // printf("[SMOOTHING] V max/limit: %f/%f, A max/limit: %f/%f \n\n\n", v_max, vel_max, a_max, acc_max);
+
+        traj_control_sampling_dt_ = 1.0 / 50.0;
+        traj_viz_sampling_dt_ = 1.0 / 5.0;
+
+        mav_msgs::EigenTrajectoryPoint::Vector eigen_traj_pt_vec;
+        mav_trajectory_generation::sampleWholeTrajectory(trajectory, traj_control_sampling_dt_, &eigen_traj_pt_vec);
+
+        mav_msgs::EigenTrajectoryPoint::Vector eigen_traj_pt_viz_vec;
+        mav_trajectory_generation::sampleWholeTrajectory(trajectory, traj_viz_sampling_dt_, &eigen_traj_pt_viz_vec);
+        curr_traj_viz_idx_++;
+        set_curr_traj_for_plotting(eigen_traj_pt_viz_vec);
+
+        curr_traj_ = eigen_traj_pt_vec;
+    }
+
+    // todo remote duplicate code wrt fit_trajcetory
+    void MultirotorApiBase::fit_trajectory_vel_constraints(const vector<Vector3r>& path, 
+                                                            const vector<Vector3r>& velocities, 
+                                                            bool add_position_constraint, 
+                                                            bool add_velocity_constraint, 
+                                                            bool add_acceleration_constraint, 
+                                                            float vel_max, 
+                                                            float acc_max,
+                                                            bool replan_from_lookahead)
+    {
+        SingleTaskCall lock(this);
+
+        // todo error checking
+        // if (path.size() < 1) // 1, as we'll add odometry to the beginning
+        // {
+            // return false;
+        // }
+
+        constexpr int N = 10;
+        constexpr int D = 3;
+        int derivative_to_optimize = mav_trajectory_generation::derivative_order::JERK;
+        mav_trajectory_generation::Trajectory trajectory;
+        curr_traj_viz_tf_.clear();
+
+        if (has_traj_ && replan_from_lookahead)
+        {
+            mav_trajectory_generation::Vertex::Vector vertices(path.size() + 1, mav_trajectory_generation::Vertex(D));
+            auto lookahead_point = curr_traj_[replan_lookahead_idx_];
+
+            Eigen::Vector3d lookahead_position_eigen(lookahead_point.position_W[0], lookahead_point.position_W[1], lookahead_point.position_W[2]);
+            vertices.front().makeStartOrEnd(lookahead_position_eigen, derivative_to_optimize);
+            curr_traj_viz_tf_.push_back(Vector3r(lookahead_position_eigen[0], lookahead_position_eigen[1], lookahead_position_eigen[2]));
+
+            if (add_velocity_constraint)
+            {
+                Eigen::Vector3d lookahead_velocity_eigen(lookahead_point.velocity_W[0], lookahead_point.velocity_W[1], lookahead_point.velocity_W[2]);
+                vertices.front().addConstraint(mav_trajectory_generation::derivative_order::VELOCITY, lookahead_velocity_eigen);
+            }
+
+            if (add_acceleration_constraint)
+            {
+                Eigen::Vector3d lookahead_acceleration_eigen(lookahead_point.acceleration_W[0], lookahead_point.acceleration_W[1], lookahead_point.acceleration_W[2]);
+                vertices.front().addConstraint(mav_trajectory_generation::derivative_order::ACCELERATION, lookahead_acceleration_eigen);
+            }
+
+            // Add last.
+            Eigen::Vector3d last_eigen(path.back().x(), path.back().y(), path.back().z());
+            Eigen::Vector3d last_eigen_velocity(velocities.back().x(), velocities.back().y(), velocities.back().z());
+
+            vertices.back().makeStartOrEnd(last_eigen, derivative_to_optimize);
+            vertices.back().addConstraint(mav_trajectory_generation::derivative_order::VELOCITY, last_eigen_velocity);
+
+            // Now do the middle bits.
+            /// note that i is starting from 0 (unlike the "else" clause, coz the 1st vertex is the lookahead point)
+            size_t j = 1;
+            for (size_t i = 0; i < path.size() - 1; i += 1)
+            {
+                curr_traj_viz_tf_.push_back(path[i]);
+                Eigen::Vector3d curr_xyz(path[i].x(), path[i].y(), path[i].z());
+                Eigen::Vector3d curr_xyz_velocity(velocities[i].x(), velocities[i].y(), velocities[i].z());
+                vertices[j].addConstraint(mav_trajectory_generation::derivative_order::POSITION, curr_xyz);
+                vertices[j].addConstraint(mav_trajectory_generation::derivative_order::VELOCITY, curr_xyz_velocity);
+                j++;
+            }
+
+            curr_traj_viz_tf_.push_back(path.back());
+            std::vector<double> segment_times = mav_trajectory_generation::estimateSegmentTimes(vertices, vel_max, acc_max);
+
+            bool optimize_time = true;
+            if (optimize_time)
+            {
+                mav_trajectory_generation::NonlinearOptimizationParameters nlopt_parameters;
+                nlopt_parameters.algorithm = nlopt::LD_LBFGS;
+                nlopt_parameters.time_alloc_method = mav_trajectory_generation::NonlinearOptimizationParameters::kMellingerOuterLoop;
+                nlopt_parameters.print_debug_info_time_allocation = false;
+                mav_trajectory_generation::PolynomialOptimizationNonLinear<N> nlopt(D, nlopt_parameters);
+                nlopt.setupFromVertices(vertices, segment_times, derivative_to_optimize);
+                nlopt.addMaximumMagnitudeConstraint(mav_trajectory_generation::derivative_order::VELOCITY, vel_max);
+                nlopt.addMaximumMagnitudeConstraint(mav_trajectory_generation::derivative_order::ACCELERATION, acc_max);
+                nlopt.optimize();
+                nlopt.getTrajectory(trajectory);
+            }
+            else
+            {
+                mav_trajectory_generation::PolynomialOptimization<N> opt(D);
+                opt.setupFromVertices(vertices, segment_times, derivative_to_optimize);
+                opt.solveLinear();
+                opt.getTrajectory(trajectory);
+            }
+        }
+
+        else
+        {
+            // use a deque? or reverse the vector and push_back odometry in the end? 
+
+            vector<Vector3r> path_internal = path; // todo if I am copying and modding with if-else, passing by const ref is stupid. but want to copy and be safe. 
+            vector<Vector3r> velocities_internal = velocities;
+
+            if (add_position_constraint)
+            {
+                auto curr_odom_position = getKinematicsEstimated().pose.position;
+                auto curr_odom_velocity = getKinematicsEstimated().twist.linear;
+                path_internal.insert(path_internal.begin(), curr_odom_position);
+                velocities_internal.insert(velocities_internal.begin(), curr_odom_velocity);//only used if add_velocity_constraint is true    
+            }
+
+            int num_vertices = path_internal.size();
+            mav_trajectory_generation::Vertex::Vector vertices(num_vertices, mav_trajectory_generation::Vertex(D));
+
+            // Add first.
+            Eigen::Vector3d first_eigen(path_internal.front().x(), path_internal.front().y(), path_internal.front().z());
+            vertices.front().makeStartOrEnd(first_eigen, derivative_to_optimize);
+            curr_traj_viz_tf_.push_back(path_internal.front());
+
+            if (add_velocity_constraint) // can be true only if add_position_constraint is true   
+            {
+                Eigen::Vector3d first_eigen_velocity(velocities_internal.front().x(), velocities_internal.front().y(), velocities_internal.front().z());
+                vertices.front().addConstraint(mav_trajectory_generation::derivative_order::VELOCITY, first_eigen_velocity);
+            }
+            if (add_acceleration_constraint)
+            {
+                auto curr_odom_accel = getKinematicsEstimated().accelerations.linear;
+                Eigen::Vector3d curr_odom_accel_eigen(curr_odom_accel.x(), curr_odom_accel.y(), curr_odom_accel.z());
+                vertices.front().addConstraint(mav_trajectory_generation::derivative_order::ACCELERATION, curr_odom_accel_eigen);
+            }
+
+            // Add last.
+            Eigen::Vector3d last_eigen(path_internal.back().x(), path_internal.back().y(), path_internal.back().z());
+            vertices.back().makeStartOrEnd(last_eigen, derivative_to_optimize);
+            Eigen::Vector3d last_eigen_velocity(velocities_internal.back().x(), velocities_internal.back().y(), velocities_internal.back().z());
+            vertices.back().addConstraint(mav_trajectory_generation::derivative_order::VELOCITY, last_eigen_velocity);
+
+            // Now do the middle bits.
+            size_t j = 1;
+            for (size_t i = 1; i < path_internal.size() - 1; i += 1)
+            {
+                curr_traj_viz_tf_.push_back(path_internal[i]);
+                Eigen::Vector3d curr_xyz_position(path_internal[i].x(), path_internal[i].y(), path_internal[i].z());
+                Eigen::Vector3d curr_xyz_velocity(velocities_internal[i].x(), velocities_internal[i].y(), velocities_internal[i].z());
+                vertices[j].addConstraint(mav_trajectory_generation::derivative_order::POSITION, curr_xyz_position);
+                vertices[j].addConstraint(mav_trajectory_generation::derivative_order::VELOCITY, curr_xyz_velocity);
+                j++;
+            }
+
+            curr_traj_viz_tf_.push_back(path_internal.back());
+            std::vector<double> segment_times = mav_trajectory_generation::estimateSegmentTimes(vertices, vel_max, acc_max);
+
+            bool optimize_time = true;
+            if (optimize_time)
+            {
+                mav_trajectory_generation::NonlinearOptimizationParameters nlopt_parameters;
+                nlopt_parameters.algorithm = nlopt::LD_LBFGS;
+                nlopt_parameters.time_alloc_method = mav_trajectory_generation::NonlinearOptimizationParameters::kMellingerOuterLoop;
+                nlopt_parameters.print_debug_info_time_allocation = false;
+                mav_trajectory_generation::PolynomialOptimizationNonLinear<N> nlopt(D, nlopt_parameters);
+                nlopt.setupFromVertices(vertices, segment_times, derivative_to_optimize);
+                nlopt.addMaximumMagnitudeConstraint(mav_trajectory_generation::derivative_order::VELOCITY, vel_max);
+                nlopt.addMaximumMagnitudeConstraint(mav_trajectory_generation::derivative_order::ACCELERATION, acc_max);
+                nlopt.optimize();
+                nlopt.getTrajectory(trajectory);
+            }
+            else
+            {
+                mav_trajectory_generation::PolynomialOptimization<N> opt(D);
+                opt.setupFromVertices(vertices, segment_times, derivative_to_optimize);
+                opt.solveLinear();
+                opt.getTrajectory(trajectory);
+            }
+
+        }
+
+        // double v_max, a_max;
+        // trajectory.computeMaxVelocityAndAcceleration(&v_max, &a_max);
+        // printf("[SMOOTHING] V max/limit: %f/%f, A max/limit: %f/%f \n\n\n", v_max, vel_max, a_max, acc_max);
+
+        traj_control_sampling_dt_ = 1.0 / 50.0;
+        traj_viz_sampling_dt_ = 1.0 / 5.0;
+
+        mav_msgs::EigenTrajectoryPoint::Vector eigen_traj_pt_vec;
+        mav_trajectory_generation::sampleWholeTrajectory(trajectory, traj_control_sampling_dt_, &eigen_traj_pt_vec);
+
+        mav_msgs::EigenTrajectoryPoint::Vector eigen_traj_pt_viz_vec;
+        mav_trajectory_generation::sampleWholeTrajectory(trajectory, traj_viz_sampling_dt_, &eigen_traj_pt_viz_vec);
+        curr_traj_viz_idx_++;
+        set_curr_traj_for_plotting(eigen_traj_pt_viz_vec);
+
+        curr_traj_ = eigen_traj_pt_vec;
+    }
+
+    void MultirotorApiBase::set_curr_traj_for_plotting(const mav_msgs::EigenTrajectoryPoint::Vector& eigen_traj_pt_vec)
+    {
+        SingleTaskCall lock(this);
+        curr_traj_viz_.clear();
+
+        for (const auto& eigen_traj_pt : eigen_traj_pt_vec)
+        {
+            curr_traj_viz_.push_back(Vector3r(eigen_traj_pt.position_W[0], eigen_traj_pt.position_W[1], eigen_traj_pt.position_W[2]));
+        }
+
+        // std::cout << "set_curr_traj_for_plotting curr_traj_viz_idx_ " << curr_traj_viz_idx_ << ", " << viz_traj_ << viz_traj_ << std::endl;
+    }
+
+    bool MultirotorApiBase::moveOnSpline(const vector<Vector3r>& path, 
+                                        bool add_position_constraint, 
+                                        bool add_velocity_constraint, 
+                                        bool add_acceleration_constraint, 
+                                        float vel_max, 
+                                        float acc_max,  
+                                        bool viz_traj,
+                                        const vector<float>& viz_traj_color_rgba, 
+                                        bool replan_from_lookahead,
+                                        float replan_lookahead_sec)
+    {
+        SingleTaskCall lock(this);
+        traj_cleared_ = false;
+        viz_traj_ = viz_traj;
+        viz_traj_color_rgba_ = viz_traj_color_rgba;
+
+        fit_trajectory(path, add_position_constraint, add_velocity_constraint, add_acceleration_constraint, vel_max, acc_max, replan_from_lookahead);
+        replan_lookahead_sec_ = replan_lookahead_sec;
+        track_trajectory(false);
+        viz_traj_ = false;// make false after tracker is finished
+
+        return true; // todo actual future
+    }
+
+    bool MultirotorApiBase::moveOnSplineVelConstraints(const vector<Vector3r>& path, 
+                                                        const vector<Vector3r>& velocities, 
+                                                        bool add_position_constraint, 
+                                                        bool add_velocity_constraint, 
+                                                        bool add_acceleration_constraint, 
+                                                        float vel_max, 
+                                                        float acc_max,
+                                                        bool viz_traj,
+                                                        const vector<float>& viz_traj_color_rgba, 
+                                                        bool replan_from_lookahead,
+                                                        float replan_lookahead_sec)
+    {
+        SingleTaskCall lock(this);
+        traj_cleared_ = false;
+        viz_traj_ = viz_traj;
+        viz_traj_color_rgba_ = viz_traj_color_rgba;
+
+        fit_trajectory_vel_constraints(path, velocities, add_position_constraint, add_velocity_constraint, add_acceleration_constraint, vel_max, acc_max, replan_from_lookahead);
+        replan_lookahead_sec_ = replan_lookahead_sec;
+        track_trajectory(true);
+        viz_traj_ = false;// make false after tracker is finished
+
+        return true; // todo actual future
+    }
+
+    bool MultirotorApiBase::track_trajectory(bool is_moveOnSplineVelConstraints)
+    {
+        bool traj_cancelled_ = false;
+        clearTrajTrackingControllerErrorState();
+        double duration_vel_cmd = 1.0 / 50.0;
+        double timeout_sec = 1.0 / 50.0;
+
+        Vector3dDeque position_reference_deque_;
+        Vector3dDeque velocity_reference_deque_;
+
+        for (const auto& eigen_traj_pt : curr_traj_)
+        {
+            position_reference_deque_.push_back(eigen_traj_pt.position_W);
+            velocity_reference_deque_.push_back(eigen_traj_pt.velocity_W);
+        }
+
+        XYZYaw curr_position;
+        XYZYaw curr_velocity;
+        XYZYaw ref_position;
+        XYZYaw ref_velocity;
+
+        bool use_only_reference_position = false;
+
+        int print_idx = 0;
+        int print_every_nth = 75;
+        int curr_tracking_ref_idx_ = 0;
+
+        // track both position and velocity until the last point
+        while (velocity_reference_deque_.size() > 1)
+        {
+            curr_tracking_ref_idx_++;
+
+            if (!traj_cancelled_)
+                replan_lookahead_idx_ = std::min(curr_tracking_ref_idx_ + static_cast<size_t>((replan_lookahead_sec_) / traj_control_sampling_dt_), 
+                                            curr_traj_.size());
+
+            auto ref_velocity_eth = velocity_reference_deque_.front();
+            auto ref_position_eth = position_reference_deque_.front();
+            Kinematics::State multirotor_kinematics_estimated = getKinematicsEstimated();
+            auto curr_position_airsim =  multirotor_kinematics_estimated.pose.position;
+            auto curr_velocity_airsim =  multirotor_kinematics_estimated.twist.linear;
+
+            ref_velocity.x = ref_velocity_eth[0];
+            ref_velocity.y = ref_velocity_eth[1];
+            ref_velocity.z = ref_velocity_eth[2];
+
+            ref_position.x = ref_position_eth[0];
+            ref_position.y = ref_position_eth[1];
+            ref_position.z = ref_position_eth[2];
+
+            curr_position.x = curr_position_airsim.x();
+            curr_position.y = curr_position_airsim.y();
+            curr_position.z = curr_position_airsim.z();
+
+            curr_velocity.x = curr_velocity_airsim.x();
+            curr_velocity.y = curr_velocity_airsim.y();
+            curr_velocity.z = curr_velocity_airsim.z();
+
+            auto curr_orientation_airsim =  multirotor_kinematics_estimated.pose.orientation;
+            float roll, pitch, yaw;
+            VectorMath::toEulerianAngle(curr_orientation_airsim, pitch, roll, yaw);
+            curr_position.yaw = wrap_to_pi(yaw);
+            ref_position.yaw = wrap_to_pi(atan2(ref_velocity.y, ref_velocity.x));
+
+            // timestamp_t t0 = get_timestamp();
+            Waiter waiter(duration_vel_cmd, timeout_sec, getCancelToken());
+
+            moveOnSpline_compute_feedback_vel(curr_position, curr_velocity, ref_position, ref_velocity, use_only_reference_position);
+
+            do
+            {
+                YawMode adj_yaw_mode(true, rad2deg(feeback_vel_xyzyaw_.yaw));
+                moveByVelocityInternal(ref_velocity.x + feeback_vel_xyzyaw_.x, 
+                                        ref_velocity.y + feeback_vel_xyzyaw_.y, 
+                                        ref_velocity.z + feeback_vel_xyzyaw_.z, 
+                                        adj_yaw_mode);
+            }
+            while (waiter.sleep());
+
+            if (waiter.isCancelled())
+                traj_cancelled_ = true;
+
+            // timestamp_t t1 = get_timestamp();
+            // double secs_simgetimages = (t1 - t0) / 1000000.0L * 1000.0;
+            // std::cout << "secs_simgetimages: " << secs_simgetimages << " milliseconds"<< std::endl;
+
+            // auto multirotor_state = getMultirotorState();
+            // if(print_idx % print_every_nth == 0)
+            // {
+                // std::cout << "curr XYZYaw: " << curr_position.x << ", " << curr_position.y << ", " << curr_position.z << ", " << rad2deg(curr_position.yaw) <<  std::endl;  
+                // std::cout << "current_velocity " << curr_velocity.x << ", " << curr_velocity.y << ", " << curr_velocity.z << std::endl; 
+                // std::cout << "ref XYZYaw: " << ref_position.x << ", " << ref_position.y << ", " << ref_position.z << ", " << rad2deg(ref_position.yaw) << std::endl;
+                // std::cout << "current speed: " << sqrt( (curr_velocity.x * curr_velocity.x) + (curr_velocity.y * curr_velocity.y) + (curr_velocity.z * curr_velocity.z)) << std::endl;
+                // std::cout << "current acc*/: " << sqrt( (curr_velocity.x * curr_velocity.x) + (curr_velocity.y * curr_velocity.y) + (curr_velocity.z * curr_velocity.z)) << std::endl;
+                // std::cout << std::endl;
+                // std::cout << "feeback_vel_xyzyaw " << feeback_vel_xyzyaw_.x << " " << feeback_vel_xyzyaw_.y << " " << feeback_vel_xyzyaw_.z << " " << rad2deg(feeback_vel_xyzyaw_.yaw) << std::endl; 
+                // std::cout << "reference_velocity" << ref_velocity.x << " " << ref_velocity.y << " " << ref_velocity.z << " " << std::endl;
+                // std::cout << std::endl;            
+            // }
+
+            print_idx++;
+            position_reference_deque_.pop_front();
+            velocity_reference_deque_.pop_front();
+        }
+
+        // now track only position. 
+        if ((velocity_reference_deque_.size() == 1) && !(is_moveOnSplineVelConstraints))
+        {
+            use_only_reference_position = true;
+
+            // todo fix this in a better way
+            // force hover in case tuned if tuned gains are pretty high and only good for moving reference state, and go crazy at static reference  
+
+            print_idx = 0;
+            double position_error = sqrt( (traj_tracker_error_state_.prev_cross_track_error * traj_tracker_error_state_.prev_cross_track_error) 
+                                        + (traj_tracker_error_state_.prev_along_track_error * traj_tracker_error_state_.prev_along_track_error)
+                                        + (traj_tracker_error_state_.prev_z_error * traj_tracker_error_state_.prev_z_error));
+
+            while((position_error > 0.2) && (print_idx < 1000))
+            {
+                Kinematics::State multirotor_kinematics_estimated = getKinematicsEstimated();
+                auto curr_position_airsim =  multirotor_kinematics_estimated.pose.position;
+                curr_position.x = curr_position_airsim.x();
+                curr_position.y = curr_position_airsim.y();
+                curr_position.z = curr_position_airsim.z();
+
+                auto curr_orientation_airsim =  multirotor_kinematics_estimated.pose.orientation;
+                // auto euler = curr_orientation_airsim.toRotationMatrix().eulerAngles(0, 1, 2);
+                // curr_position.yaw = euler[2];
+                float roll, pitch, yaw;
+                VectorMath::toEulerianAngle(curr_orientation_airsim, pitch, roll, yaw);
+                curr_position.yaw = wrap_to_pi(yaw);
+                // ref_position.yaw = atan2(ref_velocity.y, ref_velocity.x);
+
+                Waiter waiter(duration_vel_cmd, timeout_sec, getCancelToken());
+                // if(print_idx % print_every_nth == 0)
+                // {
+                    // std::cout << "position_error " << position_error << std::endl;
+                    // std::cout << "only position : current_position " << curr_position.x << ", " << curr_position.y << ", " << curr_position.z << ", " << rad2deg(curr_position.yaw) <<  std::endl;  
+                    // std::cout << "only position : reference_position" << ref_position.x << " " << ref_position.y << " " << ref_position.z << " " << rad2deg(ref_position.yaw) << std::endl;
+                    // std::cout << "current_velocity " << curr_velocity.x << ", " << curr_velocity.y << ", " << curr_velocity.z << std::endl; 
+                    // std::cout << "only position : reference_position" << ref_position.x << " " << ref_position.y << " " << ref_position.z << " " << std::endl;
+                    // std::cout << "feeback_vel_xyzyaw " << feeback_vel_xyzyaw_.x << " " << feeback_vel_xyzyaw_.y << " " << feeback_vel_xyzyaw_.z << " " << feeback_vel_xyzyaw_.yaw << std::endl; 
+                    // std::cout << "reference_velocity" << ref_velocity.x << " " << ref_velocity.y << " " << ref_velocity.z << " " << std::endl;
+                    // std::cout << std::endl;            
+                // }
+
+                DrivetrainType drivetrain = DrivetrainType::ForwardOnly;
+                moveOnSpline_compute_feedback_vel(curr_position, curr_velocity, ref_position, ref_velocity, use_only_reference_position);
+
+                do
+                {
+                    // YawMode adj_yaw_mode(false, 0.0);
+                    YawMode adj_yaw_mode;
+                    // adjustYaw(ref_velocity.x + feeback_vel_xyzyaw_.x, ref_velocity.y + feeback_vel_xyzyaw_.y, drivetrain, adj_yaw_mode);
+                    // YawMode adj_yaw_mode(true, rad2deg(feeback_vel_xyzyaw_.yaw)); 
+                    moveByVelocityInternal(feeback_vel_xyzyaw_.x, 
+                                        feeback_vel_xyzyaw_.y, 
+                                        feeback_vel_xyzyaw_.z, 
+                                            adj_yaw_mode);
+                }
+                while (waiter.sleep());
+                print_idx++;
+
+                position_error = sqrt( (traj_tracker_error_state_.prev_cross_track_error * traj_tracker_error_state_.prev_cross_track_error) 
+                                        + (traj_tracker_error_state_.prev_along_track_error * traj_tracker_error_state_.prev_along_track_error)
+                                        + (traj_tracker_error_state_.prev_z_error * traj_tracker_error_state_.prev_z_error));
+            }
+
+            YawMode adj_yaw_mode;
+            // adjustYaw(ref_velocity.x + feeback_vel_xyzyaw_.x, ref_velocity.y + feeback_vel_xyzyaw_.y, drivetrain, adj_yaw_mode);
+            // YawMode adj_yaw_mode(true, rad2deg(feeback_vel_xyzyaw_.yaw)); 
+            Waiter waiter(duration_vel_cmd, timeout_sec, getCancelToken());
+            do
+            {
+                moveByVelocityInternal(0.0, 
+                                    0.0, 
+                                    0.0, 
+                                        adj_yaw_mode);
+            }
+            while (waiter.sleep());
+
+        }
+
+        // just send last waypoint's velocity and let it be. 
+        if ((velocity_reference_deque_.size() == 1) && is_moveOnSplineVelConstraints)
+        {
+            YawMode adj_yaw_mode;
+
+            // moveByVelocityInternal(ref_velocity.x, 
+            //                        ref_velocity.y, 
+            //                        ref_velocity.z, 
+            //                         adj_yaw_mode);
+            Waiter waiter(duration_vel_cmd, timeout_sec, getCancelToken());
+            do
+            {
+                moveByVelocityInternal(0.0, 
+                                    0.0, 
+                                    0.0, 
+                                        adj_yaw_mode);
+            }
+            while (waiter.sleep());
+        }
+
+        position_reference_deque_.pop_front();
+        velocity_reference_deque_.pop_front();
+
+        if (traj_cancelled_ && !traj_cleared_)
+            has_traj_ = true;
+        else
+            has_traj_ = false;
+
+        return true;
+    }
+
+    void MultirotorApiBase::moveOnSpline_compute_feedback_vel(const XYZYaw& curr_position, const XYZYaw& curr_velocity, 
+                                                                const XYZYaw& ref_position, const XYZYaw& ref_velocity, 
+                                                                bool use_only_reference_position)
+    {
+        Eigen::Vector3d path_tangent(ref_velocity.x, ref_velocity.y, ref_velocity.z);
+        if (path_tangent.norm())
+            path_tangent.normalize();
+        // std::cout << "path_tangent " << path_tangent << std::endl;
+
+        Eigen::Vector3d curr_to_pursuit(ref_position.x - curr_position.x, ref_position.y - curr_position.y, ref_position.z - curr_position.z);
+        double z_error = curr_to_pursuit[2];
+        curr_to_pursuit[2] = 0.0;
+        // std::cout << "curr_to_pursuit " <<  curr_to_pursuit << std::endl;
+
+        Eigen::Vector3d path_normal = (curr_to_pursuit - path_tangent * (path_tangent.dot(curr_to_pursuit)));
+        if (path_normal.norm())
+            path_normal.normalize();
+        // std::cout << "path_normal " << path_normal << std::endl;
+
+        double cross_track_error = curr_to_pursuit.dot(path_normal);
+        // cross_track_error_integrated_ += cross_track_error * 0.01; // todo dt
+        // std::cout << "cross_track_error " << cross_track_error << std::endl;
+
+        double u_cross_track = traj_tracker_gains_.kp_cross_track * cross_track_error +
+                                // traj_tracker_gains_.ki_cross_track * cross_track_error_integrated_ +
+                                traj_tracker_gains_.kd_cross_track * (cross_track_error - traj_tracker_error_state_.prev_cross_track_error);// /dt;
+
+        // std::cout << "u_cross_track " << u_cross_track << std::endl;
+
+        XYZYaw vel_feedback_xyzyaw;
+
+        double along_track_error = curr_to_pursuit.dot(path_tangent);
+        // std::cout << "along_track_error " << along_track_error << std::endl;
+
+        double u_along_track = traj_tracker_gains_.kp_along_track * along_track_error +
+                                // pr.cross_track_I * control_state.cross_track_integrator +
+                                traj_tracker_gains_.kd_along_track * (along_track_error - traj_tracker_error_state_.prev_along_track_error);// /dt;
+
+        // std::cout << "u_along_track " << u_along_track << std::endl;
+
+        vel_feedback_xyzyaw.x = (u_cross_track * path_normal[0]) + (u_along_track * path_tangent[0]);
+        vel_feedback_xyzyaw.y = (u_cross_track * path_normal[1]) + (u_along_track * path_tangent[1]);
+
+        vel_feedback_xyzyaw.z = (traj_tracker_gains_.kp_z_track * z_error)
+                                + (traj_tracker_gains_.kd_z_track * (z_error - traj_tracker_error_state_.prev_z_error));
+
+        double curr_yaw_error = angular_dist(curr_position.yaw, ref_position.yaw);
+        // std::cout << "curr_yaw_error " << rad2deg(curr_yaw_error) << std::endl;
+        // std::cout << "curr_position.yaw " << rad2deg(curr_position.yaw) << std::endl;
+        // std::cout << "ref_position.yaw " << rad2deg(ref_position.yaw) << std::endl << std::endl;
+        vel_feedback_xyzyaw.yaw = traj_tracker_gains_.kp_yaw * curr_yaw_error + traj_tracker_gains_.kd_yaw * (curr_yaw_error - traj_tracker_error_state_.prev_yaw_error); // todo
+
+        traj_tracker_error_state_.prev_cross_track_error = cross_track_error;
+        traj_tracker_error_state_.prev_z_error = z_error;
+        traj_tracker_error_state_.prev_along_track_error = along_track_error;
+        traj_tracker_error_state_.prev_yaw_error = curr_yaw_error;
+
+        if(!use_only_reference_position)
+        {
+
+            // only consider vel along the path for vel controller
+            Eigen::Vector3d curr_velocity_eigen(curr_velocity.x, curr_velocity.y, curr_velocity.z);
+            Eigen::Vector3d ref_velocity_eigen(ref_velocity.x, ref_velocity.y, ref_velocity.z);
+
+            double curr_velocity_along_path = curr_velocity_eigen.dot(path_tangent);
+
+            double velocity_along_path_error = ref_velocity_eigen.dot(path_tangent) - curr_velocity_along_path;
+            double u_along_track_velocity = traj_tracker_gains_.kp_vel_along_track * velocity_along_path_error +
+                                    // pr.cross_track_I * control_state.cross_track_integrator +
+                                    traj_tracker_gains_.kd_vel_along_track * (velocity_along_path_error - traj_tracker_error_state_.prev_velocity_along_path_error);// /dt;
+
+            double curr_velocity_cross_track = curr_velocity_eigen.dot(path_normal);
+
+            // weird as  ref_velocity_eigen.dot(path_normal) should be zero
+            double velocity_cross_track_error = ref_velocity_eigen.dot(path_normal) - curr_velocity_cross_track;
+            double u_cross_track_velocity = traj_tracker_gains_.kp_vel_cross_track * velocity_cross_track_error +
+                                    // pr.cross_track_I * control_state.cross_track_integrator +
+                                    traj_tracker_gains_.kd_vel_cross_track * (velocity_cross_track_error - traj_tracker_error_state_.prev_velocity_cross_track_error);// /dt;
+
+            double curr_z_error_velocity = ref_velocity.z - curr_velocity.z;
+
+            vel_feedback_xyzyaw.x = vel_feedback_xyzyaw.x + (u_along_track_velocity * path_tangent[0]);
+            vel_feedback_xyzyaw.y = vel_feedback_xyzyaw.y + (u_along_track_velocity * path_tangent[1]);
+
+            vel_feedback_xyzyaw.x = vel_feedback_xyzyaw.x + (u_cross_track_velocity * path_normal[0]);
+            vel_feedback_xyzyaw.y = vel_feedback_xyzyaw.y + (u_cross_track_velocity * path_normal[1]);
+
+            vel_feedback_xyzyaw.z = vel_feedback_xyzyaw.z 
+                                    + (traj_tracker_gains_.kp_vel_z * curr_z_error_velocity)
+                                    + traj_tracker_gains_.kd_vel_z * (curr_z_error_velocity - traj_tracker_error_state_.prev_velocity_z_error);
+
+            traj_tracker_error_state_.prev_velocity_cross_track_error = velocity_along_path_error;
+            traj_tracker_error_state_.prev_velocity_along_path_error = velocity_along_path_error;
+            traj_tracker_error_state_.prev_velocity_z_error = curr_z_error_velocity;
+        }
+
+        feeback_vel_xyzyaw_ = vel_feedback_xyzyaw;
+    }
+
 }
 } //namespace
+#endif
 #endif

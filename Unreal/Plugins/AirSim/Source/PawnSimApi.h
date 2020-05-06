@@ -84,7 +84,7 @@ public: //implementation of VehicleSimApiBase
     virtual void setCameraFoV(const std::string& camera_name, float fov_degrees) override;
     virtual void setDistortionParam(const std::string& camera_name, const std::string& param_name, float value) override;
     virtual std::vector<float> getDistortionParams(const std::string& camera_name) override;
-
+    
     virtual CollisionInfo getCollisionInfo() const override;
     virtual int getRemoteControlID() const override;
     virtual msr::airlib::RCData getRCData() const override;
@@ -101,6 +101,7 @@ public: //implementation of VehicleSimApiBase
     virtual const msr::airlib::Environment* getGroundTruthEnvironment() const override;
     virtual std::string getRecordFileLine(bool is_header_line) const override;
     virtual void reportState(msr::airlib::StateReporter& reporter) override;
+    virtual void setStateLogStatus(bool is_enabled) override;
 
     virtual void addDetectionFilterMeshName(const std::string& camera_name, ImageCaptureBase::ImageType image_type, const std::string& mesh_name) override;
     virtual void setDetectionFilterRadius(const std::string& camera_name, ImageCaptureBase::ImageType image_type, const float radius_cm) override;

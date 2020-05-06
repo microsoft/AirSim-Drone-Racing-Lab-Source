@@ -11,6 +11,12 @@ MultirotorPawnSimApi::MultirotorPawnSimApi(const Params& params)
 {
 }
 
+MultirotorPawnSimApi::~MultirotorPawnSimApi()
+{
+    if (state_log_status_)
+        stopStateLogging();
+}
+
 void MultirotorPawnSimApi::initialize()
 {
     PawnSimApi::initialize();
@@ -19,6 +25,12 @@ void MultirotorPawnSimApi::initialize()
     std::shared_ptr<UnrealSensorFactory> sensor_factory = std::make_shared<UnrealSensorFactory>(getPawn(), &getNedTransform());
     vehicle_params_ = MultiRotorParamsFactory::createConfig(getVehicleSetting(), sensor_factory);
     vehicle_api_ = vehicle_params_->createMultirotorApi();
+
+    // moveOnSpline viz
+    vehicle_api_->viz_traj_ = false; // this is a hack? ideally, should be done with vehicle_params_ --> factory createMultirotorApi() ? 
+    vehicle_api_->tf_to_plot_ = false; 
+    vehicle_api_->viz_poses_vec_.clear(); 
+
     //setup physics vehicle
     multirotor_physics_body_ = std::unique_ptr<MultiRotor>(new MultiRotorPhysicsBody(vehicle_params_.get(), vehicle_api_.get(), getKinematics(), getEnvironment()));
     rotor_count_ = multirotor_physics_body_->wrenchVertexCount();
@@ -39,6 +51,9 @@ void MultirotorPawnSimApi::initialize()
     VectorMath::toEulerianAngle(pose.orientation, pitch, roll, yaw);
     pose.orientation = VectorMath::toQuaternion(0, 0, yaw);
     setPose(pose, false);
+
+    log_folderpath_ = common_utils::FileSystem::getLogFolderPath(true);    
+    state_logger_ = std::unique_ptr<FileLogger>(new FileLogger());
 }
 
 void MultirotorPawnSimApi::pawnTick(float dt)
@@ -61,6 +76,19 @@ void MultirotorPawnSimApi::updateRenderedState(float dt)
     //move collision info from rendering engine to vehicle
     const CollisionInfo& collision_info = getCollisionInfo();
     multirotor_physics_body_->setCollisionInfo(collision_info);
+
+    if (pending_pose_status_ == PendingPoseStatus::RenderStatePending) {
+        multirotor_physics_body_->setPose(pending_phys_pose_);
+        pending_pose_status_ = PendingPoseStatus::RenderPending;
+    }
+    // Neurips reset. todo: could be made?
+    else if ((last_phys_pose_ - getPose()).position.norm() > 0.1) {
+		getVehicleApi()->clearTrajectory();
+		pending_phys_pose_ = getPose();
+		multirotor_physics_body_->setPose(pending_phys_pose_);
+		pending_pose_status_ = PendingPoseStatus::RenderPending;
+		multirotor_physics_body_->reset_everything_minus_position();
+	}   
 
     last_phys_pose_ = multirotor_physics_body_->getPose();
 
@@ -158,6 +186,9 @@ void MultirotorPawnSimApi::update()
     //update forces on vertices
     multirotor_physics_body_->update();
 
+    if (state_log_status_)
+        writeStatetoFile();
+
     //update to controller must be done after kinematics have been updated by physics engine
 }
 
@@ -166,6 +197,89 @@ void MultirotorPawnSimApi::reportState(StateReporter& reporter)
     PawnSimApi::reportState(reporter);
 
     multirotor_physics_body_->reportState(reporter);
+}
+
+std::string MultirotorPawnSimApi::createStateHeaderLine()
+{
+    std::stringstream ss;
+
+    ss << "Timestamp,pos_x,pos_y,pos_z,rot_w,rot_x,rot_y,rot_z,lin_vel_x,lin_vel_y,lin_vel_z,"
+        << "ang_vel_x,ang_vel_y,ang_vel_z,lin_acc_x,lin_acc_y,lin_acc_z,ang_acc_x,ang_acc_y,ang_acc_z,"
+        << "force_x,force_y,force_z,torque_x,torque_y,torque_z,"
+        << "rotor1_dir,rotor1_input,rotor1_input_filt,rotor1_speed,rotor1_thrust,rotor1_torque,"
+        << "rotor2_dir,rotor2_input,rotor2_input_filt,rotor2_speed,rotor2_thrust,rotor2_torque,"
+        << "rotor3_dir,rotor3_input,rotor3_input_filt,rotor3_speed,rotor3_thrust,rotor3_torque,"
+        << "rotor4_dir,rotor4_input,rotor4_input_filt,rotor4_speed,rotor4_thrust,rotor4_torque";
+
+    return ss.str();
+}
+
+void MultirotorPawnSimApi::writeStatetoFile()
+{
+    std::stringstream ss;
+    uint64_t timestamp_millis = static_cast<uint64_t>(msr::airlib::ClockFactory::get()->nowNanos() / 1.0E6);
+
+    const msr::airlib::Kinematics::State* kinematics = getGroundTruthKinematics();
+
+    ss << std::fixed << std::setprecision(8) << timestamp_millis << ","
+        << kinematics->pose.position.x() << "," << kinematics->pose.position.y() << "," << kinematics->pose.position.z() << ","
+        << kinematics->pose.orientation.w() << "," << kinematics->pose.orientation.x() << "," << kinematics->pose.orientation.y() << "," << kinematics->pose.orientation.z() << ","
+        << kinematics->twist.linear.x() << "," << kinematics->twist.linear.y() << "," << kinematics->twist.linear.z() << ","
+        << kinematics->twist.angular.x() << "," << kinematics->twist.angular.y() << "," << kinematics->twist.angular.z() << ","
+        << kinematics->accelerations.linear.x() << "," << kinematics->accelerations.linear.y() << "," << kinematics->accelerations.linear.z() << ","
+        << kinematics->accelerations.angular.x() << "," << kinematics->accelerations.angular.y() << "," << kinematics->accelerations.angular.z() << ",";
+
+    const auto& multirotor_wrench = multirotor_physics_body_->getWrench();
+
+    ss << std::fixed << std::setprecision(8) << multirotor_wrench.force.x() << "," << multirotor_wrench.force.y() << "," << multirotor_wrench.force.z() << ","
+        << multirotor_wrench.torque.x() << "," << multirotor_wrench.torque.y() << "," << multirotor_wrench.torque.z() << ",";
+
+    for (unsigned int i = 0; i < rotor_count_; ++i) {
+        const auto& rotor_output = multirotor_physics_body_->getRotorOutput(i);
+
+        ss << static_cast<int>(rotor_output.turning_direction) << ",";
+        ss << std::fixed << std::setprecision(8) << rotor_output.control_signal_input  << "," << rotor_output.control_signal_filtered << "," 
+            << rotor_output.speed << "," << rotor_output.thrust << "," << rotor_output.torque_scaler;
+
+        if (i < rotor_count_ - 1)
+            ss << ",";
+    }
+
+    state_logger_->writeString(ss.str() + "\n");
+}
+
+void MultirotorPawnSimApi::setStateLogStatus(bool is_enabled)
+{
+    if (is_enabled != getStateLogStatus()) {
+        if (is_enabled)
+            startStateLogging();
+        else
+            stopStateLogging();
+    }
+}
+
+bool MultirotorPawnSimApi::getStateLogStatus()
+{
+    return state_log_status_;
+}
+
+void MultirotorPawnSimApi::startStateLogging()
+{
+    std::string log_filepath = common_utils::FileSystem::getLogFileNamePath(log_folderpath_, "multirotor_state_log", "_", ".txt", true);
+        
+    state_logger_->openFile(log_filepath);
+    state_logger_->writeString(createStateHeaderLine() + "\n");
+
+    state_log_status_ = true;
+
+    UAirBlueprintLib::LogMessage(TEXT("High frequency state logging is ON"), TEXT(""), LogDebugLevel::Informational);
+}
+
+void MultirotorPawnSimApi::stopStateLogging()
+{
+    state_logger_->closeFile();
+    state_log_status_ = false;
+    UAirBlueprintLib::LogMessage(TEXT("High frequency state log saved."), TEXT(""), LogDebugLevel::Success);
 }
 
 MultirotorPawnSimApi::UpdatableObject* MultirotorPawnSimApi::getPhysicsBody()

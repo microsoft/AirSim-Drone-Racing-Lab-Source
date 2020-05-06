@@ -15,9 +15,27 @@
 #include "PawnSimApi.h"
 #include "common/StateReporterWrapper.hpp"
 #include "LoadingScreenWidget.h"
+
+#include "vehicles/multirotor/api/MultirotorApiBase.hpp"
+#include "Components/LineBatchComponent.h" 
+
 #include "SimModeBase.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FLevelLoaded);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FRaceStartEvent, int, RaceTier);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FRaceResetEvent);
+
+USTRUCT(BlueprintType)
+struct AIRSIM_API FRacerState
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, Category = Racing)
+	bool Disqualified = false;
+
+	UPROPERTY(BlueprintReadWrite, Category = Racing)
+	int LastGatePassed = -1;
+};
 
 UCLASS()
 class AIRSIM_API ASimModeBase : public AActor
@@ -27,6 +45,18 @@ public:
 
     UPROPERTY(BlueprintAssignable, BlueprintCallable)
     FLevelLoaded OnLevelLoaded;
+
+	UPROPERTY(BlueprintReadOnly, Category = Racing)
+	bool RaceLoggingDisabled;
+
+	UPROPERTY(BlueprintReadWrite, Category = Racing)
+	TMap<FString, FRacerState> RacerStates;
+
+	UPROPERTY(BlueprintAssignable, Category = Racing)
+	FRaceStartEvent OnStartRace;
+
+	UPROPERTY(BlueprintAssignable, Category = Racing)
+	FRaceResetEvent OnResetRace;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Refs")
     ACameraDirector* CameraDirector;
@@ -60,6 +90,8 @@ public:
     virtual void pause(bool is_paused);
     virtual void continueForTime(double seconds);
     virtual void continueForFrames(uint32_t frames);
+
+    virtual void setWind(const msr::airlib::Vector3r& wind) const;
 
     virtual void setWind(const msr::airlib::Vector3r& wind) const;
 
@@ -182,6 +214,11 @@ private:
     bool lidar_draw_debug_points_ = false;
     static ASimModeBase* SIMMODE;
 
+    // moveOnSpline traj viz
+    int plot_multirotor_trajectory_start_ctr_;
+    std::vector<TArray<FBatchedLine>> traj_lines_;
+    std::vector<bool> traj_changed_;
+
 private:
     void setStencilIDs();
     void initializeTimeOfDay();
@@ -191,4 +228,7 @@ private:
     void showClockStats();
     void drawLidarDebugPoints();
     void drawDistanceSensorDebugPoints();
+
+    // moveOnSpline traj viz
+    void plot_multirotor_trajectory();
 };
