@@ -572,7 +572,7 @@ class VehicleClient:
             self.client.call("simGetCameraInfo", str(camera_name), vehicle_name)
         )
 
-    def simGetDistortionParams(self, camera_name, vehicle_name = ''):
+    def simGetDistortionParams(self, camera_name, vehicle_name=""):
         """
         Get camera distortion parameters
         Args:
@@ -582,9 +582,11 @@ class VehicleClient:
             List (float): List of distortion parameter values corresponding to K1, K2, K3, P1, P2 respectively.
         """
 
-        return self.client.call('simGetDistortionParams', str(camera_name), vehicle_name)
+        return self.client.call(
+            "simGetDistortionParams", str(camera_name), vehicle_name
+        )
 
-    def simSetDistortionParams(self, camera_name, distortion_params, vehicle_name = ''):
+    def simSetDistortionParams(self, camera_name, distortion_params, vehicle_name=""):
         """
         Set camera distortion parameters
         Args:
@@ -595,9 +597,15 @@ class VehicleClient:
         """
 
         for param_name, value in distortion_params.items():
-            self.client.call('simSetDistortionParam', str(camera_name), param_name, value, vehicle_name)
+            self.client.call(
+                "simSetDistortionParam",
+                str(camera_name),
+                param_name,
+                value,
+                vehicle_name,
+            )
 
-    def simSetDistortionParam(self, camera_name, param_name, value, vehicle_name = ''):
+    def simSetDistortionParam(self, camera_name, param_name, value, vehicle_name=""):
         """
         Set single camera distortion parameter
         Args:
@@ -606,7 +614,9 @@ class VehicleClient:
             value (float): Value of distortion parameter
             vehicle_name (str, optional): Vehicle which the camera is associated with
         """
-        self.client.call('simSetDistortionParam', str(camera_name), param_name, value, vehicle_name)
+        self.client.call(
+            "simSetDistortionParam", str(camera_name), param_name, value, vehicle_name
+        )
 
     def simSetCameraOrientation(self, camera_name, orientation, vehicle_name=""):
         """
@@ -961,14 +971,104 @@ class VehicleClient:
 
     def simCreateVoxelGrid(self, position, x, y, z, res, of):
         """
-        Construct and save a binvox-formatted voxel grid of environment
+        Construct and save a binvox-formatted voxel grid of environment. Voxel grid
+        stores the binary occupancy of the defined space as boolean values. 
+
+        Stored as a binvox to allow easy conversion to octomaps. 
+
         Args:
             position (Vector3r): Position around which voxel grid is centered in m
             x, y, z (float): Size of each voxel grid dimension in m
             res (float): Resolution of voxel grid in m
             of (str): Name of output file to save voxel grid as
         """
-        return self.client.call('simCreateVoxelGrid', position, x, y, z, res, of)
+        return self.client.call("simCreateVoxelGrid", position, x, y, z, res, of)
+
+    def simBuildSDF(self, position, x, y, z, res):
+        """
+        Construct a signed distance field of the environment centered at position, 
+        and with dimensions (x, y, z). Internally, the SDF is stored as a special 
+        case of a voxel grid with floating point distances instead of boolean occupancy.
+
+        Args:
+            position (Vector3r): Global position around which field is centered in m
+            x, y, z (float): Size of distance field dimensions in m
+            res (float): Resolution of distance field in m
+        """
+        return self.client.call("simBuildSDF", position, x, y, z, res)
+
+    def simCheckOccupancy(self, position):
+        """
+        Check and return occupancy of a point. Requires signed distance field to be 
+        built beforehand. 
+
+        Args:
+            position (Vector3r): Global position at which occupancy is to be checked (m)
+        """
+        return self.client.call("simCheckOccupancy", position)
+
+    def simGetSignedDistance(self, position):
+        """
+        Get signed distance of a point (distance to the closest 'object surface') 
+        in the environment. Requires signed distance field to be built beforehand. 
+
+        Distance is positive if the point is in free space, and negative if the point is 
+        inside an object. 
+
+        Args:
+            position (Vector3r): Global position at which distance is to be computed (m)
+
+        Returns:
+            dist (float)
+        """
+        return self.client.call("simGetSignedDistance", position)
+
+    def simGetSDFGradient(self, position):
+        """
+        Get the SDF gradient at a point (vector pointing away from the closest
+        'object surface') in the environment. Requires signed distance field to be built 
+        beforehand. 
+
+        Args:
+            position (Vector3r): Global position at which gradient is to be computed (m)
+
+        Returns:
+            gradient (Vector3r): SDF gradient at the position
+        """
+        return self.client.call("simGetSDFGradient", position)
+
+    def simProjectToFreeSpace(self, position, mindist):
+        """
+        Project a given point into free space using the SDF, with a specified minimum clearance 
+        from existing objects. Returns the same point if the point is already free, else follows 
+        the SDF gradient to find a free point that satisfies the minimum distance constraint.
+
+        Args:
+            position (Vector3r): Global position to project (m)
+            mindist (float): Minimum distance from objects to satisfy when finding the free point
+
+        Returns:
+            free_pt (Vector3r): Projected position in free space
+        """
+        return self.client.call("simProjectToFreeSpace", position, mindist)
+
+    def simSaveSDF(self, filepath):
+        """
+        Save the constructed signed distance field to a file.
+
+        Args:
+            filepath (str): Filename to save the SDF to
+        """
+        return self.client.call("simSaveSDF", filepath)
+
+    def simLoadSDF(self, filepath):
+        """
+        Load a saved signed distance field.
+
+        Args:
+            filepath (str): Filename to load the SDF from
+        """
+        return self.client.call("simLoadSDF", filepath)
 
     def simSetWind(self, wind):
         """
@@ -976,7 +1076,7 @@ class VehicleClient:
         Args:
             wind (Vector3r): Wind, in World frame, NED direction, in m/s 
         """
-        self.client.call('simSetWind', wind)
+        self.client.call("simSetWind", wind)
 
 
 # -----------------------------------  Multirotor APIs ---------------------------------------------
@@ -984,7 +1084,7 @@ class MultirotorClient(VehicleClient, object):
     def __init__(self, ip="", port=41451, timeout_value=3600):
         super(MultirotorClient, self).__init__(ip, port, timeout_value)
 
-        self.race_tier:int = None
+        self.race_tier: int = None
         self.level_name: str
         self.MAX_NUMBER_OF_GETOBJECTPOSE_TRIALS = 10
 

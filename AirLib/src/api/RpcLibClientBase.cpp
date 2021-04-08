@@ -481,6 +481,36 @@ __pragma(warning(disable : 4239))
             return pimpl_->client.call("simCreateVoxelGrid", RpcLibAdaptorsBase::Vector3r(position), x, y, z, res, output_file).as<bool>();
         }
 
+        // SDF APIs
+        bool RpcLibClientBase::simBuildSDF(const msr::airlib::Vector3r& position, const double& x, const double& y, const double& z, const float& res)
+        {
+            return pimpl_->client.call("simBuildSDF", RpcLibAdapatorsBase::Vector3r(position), x, y, z, res).as<bool>();
+        }
+        msr::airlib::Vector3r RpcLibClientBase::simProjectToFreeSpace(const msr::airlib::Vector3r& position, const double& mindist)
+        {
+            return pimpl_->client.call("simProjectToFreeSpace", RpcLibAdapatorsBase::Vector3r(position), mindist).as<RpcLibAdapatorsBase::Vector3r>().to();
+        }
+        bool RpcLibClientBase::simCheckOccupancy(const msr::airlib::Vector3r& position)
+        {
+            return pimpl_->client.call("simCheckOccupancy", RpcLibAdapatorsBase::Vector3r(position)).as<bool>();
+        }
+        double RpcLibClientBase::simGetSignedDistance(const msr::airlib::Vector3r& position)
+        {
+            return pimpl_->client.call("simGetSignedDistance", RpcLibAdapatorsBase::Vector3r(position)).as<double>();
+        }
+        msr::airlib::Vector3r RpcLibClientBase::simGetSDFGradient(const msr::airlib::Vector3r& position)
+        {
+            return pimpl_->client.call("simGetSDFGradient", RpcLibAdapatorsBase::Vector3r(position)).as<RpcLibAdapatorsBase::Vector3r>().to();
+        }
+        bool RpcLibClientBase::simSaveSDF(const std::string& filepath)
+        {
+            return pimpl_->client.call("simSaveSDF", filepath).as<bool>();
+        }
+        bool RpcLibClientBase::simLoadSDF(const std::string& filepath)
+        {
+            return pimpl_->client.call("simLoadSDF", filepath).as<bool>();
+        }
+
         void RpcLibClientBase::cancelLastTask(const std::string& vehicle_name)
         {
             pimpl_->client.call("cancelLastTask", vehicle_name);

@@ -68,7 +68,16 @@ public:
     virtual void simPlotTransforms(const std::vector<Pose>& poses, float scale, float thickness, float duration, bool is_persistent) override;
     virtual void simPlotTransformsWithNames(const std::vector<Pose>& poses, const std::vector<std::string>& names, float tf_scale, float tf_thickness, float text_scale, const std::vector<float>& text_color_rgba, float duration) override;
     virtual std::vector<MeshPositionVertexBuffersResponse> getMeshPositionVertexBuffers() const override;
-    virtual bool createVoxelGrid(const Vector3r& position, const int& x_size, const int& y_size, const int& z_size, const float& res, const std::string& output_file) override;
+
+    // Voxel grid/SDF API
+    virtual bool createVoxelGrid(const Vector3r& position, const double& x_size, const double& y_size, const double& z_size, const float& res, const std::string& output_file) override;
+    virtual bool buildSDF(const Vector3r& position, const double& x_size, const double& y_size, const double& z_size, const float& res) override;
+    virtual Vector3r projectToCollisionFree(const Vector3r& position, const double& mindist) override;
+    virtual double getSignedDistance(const Vector3r& position) override;
+    virtual Vector3r getSDFGradient(const Vector3r& position) override;
+    virtual bool isOccupied(const Vector3r& position) override;
+    virtual bool saveSDF(const std::string& filepath) override;
+    virtual bool loadSDF(const std::string& filepath) override;
 
 	// Race API
 	virtual void disableRaceLogging() override;
@@ -95,7 +104,10 @@ private:
 private:
     ASimModeBase* simmode_;
     ULevelStreamingDynamic* current_level_;
+
+    VoxelGrid::VoxelGrid<uint8_t> voxel_grid_temp;
     std::vector<bool> voxel_grid_;
+    sdf_tools::SignedDistanceField sdf_;
 
 	// Race API
 	std::map<FString, Pose> gate_noise_map_;

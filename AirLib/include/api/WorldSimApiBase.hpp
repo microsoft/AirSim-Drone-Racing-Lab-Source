@@ -76,6 +76,15 @@ namespace airlib
 
         virtual bool createVoxelGrid(const Vector3r& position, const int& x_size, const int& y_size, const int& z_size, const float& res, const std::string& output_file) = 0;
 
+        // SDF APIs
+        virtual bool buildSDF(const Vector3r& position, const double& x_size, const double& y_size, const double& z_size, const float& res) = 0;
+        virtual Vector3r projectToCollisionFree(const Vector3r& position, const double& mindist) = 0;
+        virtual double getSignedDistance(const Vector3r& position) = 0;
+        virtual Vector3r getSDFGradient(const Vector3r& position) = 0;
+        virtual bool isOccupied(const Vector3r& position) = 0;    
+        virtual bool saveSDF(const std::string& filepath) = 0;
+        virtual bool loadSDF(const std::string& filepath) = 0;
+
         // Recording APIs
         virtual void startRecording() = 0;
         virtual void stopRecording() = 0;

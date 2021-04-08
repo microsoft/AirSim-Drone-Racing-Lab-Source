@@ -231,9 +231,8 @@ IF NOT EXIST AirLib\deps\eigen3 (
     powershell -command "Move-Item -Path AirLib\deps\eigen* -Destination AirLib\deps\del_eigen"
     REM move AirLib\deps\eigen* AirLib\deps\del_eigen
     mkdir AirLib\deps\eigen3
-    move AirLib\deps\del_eigen\Eigen AirLib\deps\eigen3\Eigen
-    rmdir /S /Q AirLib\deps\del_eigen
-    del eigen3.zip
+    move eigen3\Eigen AirLib\deps\eigen3\Eigen
+    move eigen3\unsupported AirLib\deps\eigen3\unsupported
 )
 IF NOT EXIST AirLib\deps\eigen3 goto :buildfailed
 IF NOT EXIST build_debug (

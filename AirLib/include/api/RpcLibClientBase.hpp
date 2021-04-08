@@ -142,6 +142,15 @@ namespace airlib
 
         std::string getSettingsString() const;
 
+        // SDF APIs:
+        bool simBuildSDF(const Vector3r& position, const double& x_size, const double& y_size, const double& z_size, const float& res);
+        Vector3r simProjectToFreeSpace(const Vector3r& position, const double& mindist);
+        double simGetSignedDistance(const Vector3r& position);
+        Vector3r simGetSDFGradient(const Vector3r& position);
+        bool simCheckOccupancy(const Vector3r& position);
+        bool simLoadSDF(const std::string& filepath);
+        bool simSaveSDF(const std::string& filepath);
+
 
         // ADRL - internal APIs
         // Race API

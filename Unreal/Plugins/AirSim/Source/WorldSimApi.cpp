@@ -153,7 +153,7 @@ AActor* WorldSimApi::createNewActor(const FActorSpawnParameters& spawn_params, c
     return NewActor;
 }
 
-bool WorldSimApi::createVoxelGrid(const Vector3r& position, const int& x_size, const int& y_size, const int& z_size, const float& res, const std::string& output_file)
+bool WorldSimApi::createVoxelGrid(const Vector3r& position, const double& x_size, const double& y_size, const double& z_size, const float& res, const std::string& output_file)
 {
     bool success = false;
     int ncells_x = x_size / res;
@@ -218,6 +218,96 @@ bool WorldSimApi::createVoxelGrid(const Vector3r& position, const int& x_size, c
     output.close();
     success = true;
     return success;
+}
+
+bool WorldSimApi::buildSDF(const Vector3r& position, const double& x_size, const double& y_size, const double& z_size, const float& res)
+{
+    Eigen::Translation3d origin_translation(-x_size / 2, -y_size / 2, -z_size / 2);
+    Eigen::Quaterniond origin_rotation;
+    origin_rotation.setIdentity();
+
+    Eigen::Isometry3d origin_transform = origin_translation * origin_rotation;
+    std::string frame_;
+    bool success = false;
+
+    float scale_cm = res * 100;
+    FCollisionQueryParams params;
+    params.bFindInitialOverlaps = true;
+    params.bTraceComplex = false;
+    params.TraceTag = "";
+
+    voxel_grid_temp = VoxelGrid::VoxelGrid<uint8_t>(origin_transform, res, x_size, y_size, z_size, 0);
+
+    std::function<bool(const VoxelGrid::GRID_INDEX&)> is_filled_fn = [&](const VoxelGrid::GRID_INDEX& index)
+    {
+        // Convert SDF indices into a real-world location
+        const Eigen::Vector4d location = voxel_grid_temp.GridIndexToLocation(index);
+
+        // use UE function here
+        Vector3r grid_position = location.head<3>().cast<float>();
+        FVector position_local = simmode_->getGlobalNedTransform().fromGlobalNed(grid_position + position);
+        bool occupied = simmode_->GetWorld()->OverlapBlockingTestByChannel(position_local, FQuat::Identity, ECollisionChannel::ECC_Pawn, FCollisionShape::MakeBox(FVector(scale_cm / 2)), params);
+
+        if (occupied)
+        {
+            // Mark as filled
+            return true;
+        }
+        else
+        {
+            // Mark as free space
+            return false;
+        }
+    };
+
+    sdf_ = sdf_generation::ExtractSignedDistanceField(voxel_grid_temp, is_filled_fn, INFINITY, "local", false).first;
+
+    return success;
+}
+
+bool WorldSimApi::isOccupied(const Vector3r& position)
+{
+    std::pair <double, bool> dist = sdf_.EstimateDistance3d(position.cast<double>());
+    return (dist.first < 0.0);
+}
+
+double WorldSimApi::getSignedDistance(const Vector3r& position)
+{
+    std::pair <double, bool> dist = sdf_.EstimateDistance3d(position.cast<double>());
+    return dist.first;
+}
+
+Vector3r WorldSimApi::getSDFGradient(const Vector3r& position)
+{
+    std::vector <double> gradient = sdf_.GetAutoDiffGradient3d(position.cast<double>());
+    Eigen::Vector3d sdf_gradient;
+
+    if (gradient.size() == 0) {
+        sdf_gradient << 0.0, 0.0, 0.0;
+    }
+    else {
+        sdf_gradient = Eigen::Map<Eigen::Vector3d>(gradient.data());
+    }
+
+    return sdf_gradient.cast<float>();
+}
+
+Vector3r WorldSimApi::projectToCollisionFree(const Vector3r& position, const double& mindist)
+{
+    Eigen::Vector3d free_pt = sdf_.ProjectOutOfCollisionToMinimumDistance3d(position.cast<double>(), mindist);
+    return free_pt.cast<float>();
+}
+
+bool WorldSimApi::saveSDF(const std::string& filepath)
+{
+    sdf_.SaveToFile(sdf_, filepath, false);
+    return false;
+}
+
+bool WorldSimApi::loadSDF(const std::string& filepath)
+{
+    sdf_ = sdf_.LoadFromFile(filepath);
+    return false;
 }
 
 bool WorldSimApi::isPaused() const

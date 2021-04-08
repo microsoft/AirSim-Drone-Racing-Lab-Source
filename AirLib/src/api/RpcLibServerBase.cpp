@@ -397,6 +397,36 @@ namespace airlib
             return getWorldSimApi()->createVoxelGrid(position.to(), x, y, z, res, output_file);
         });
 
+        pimpl_->server.bind("simBuildSDF", [&](const RpcLibAdapatorsBase::Vector3r& position, const double& x, const double& y, const double& z, const float& res) -> bool {
+            return getWorldSimApi()->buildSDF(position.to(), x, y, z, res);
+        });
+        
+        pimpl_->server.bind("simProjectToFreeSpace", [&](const RpcLibAdapatorsBase::Vector3r& position, const double& mindist) -> RpcLibAdapatorsBase::Vector3r {
+            const auto& free_pt = getWorldSimApi()->projectToCollisionFree(position.to(), mindist);
+            return RpcLibAdapatorsBase::Vector3r(free_pt);
+        });
+
+        pimpl_->server.bind("simCheckOccupancy", [&](const RpcLibAdapatorsBase::Vector3r& position) -> bool {
+            return getWorldSimApi()->isOccupied(position.to());
+        });
+
+        pimpl_->server.bind("simGetSignedDistance", [&](const RpcLibAdapatorsBase::Vector3r& position) -> double {
+            return getWorldSimApi()->getSignedDistance(position.to());
+        });
+
+        pimpl_->server.bind("simGetSDFGradient", [&](const RpcLibAdapatorsBase::Vector3r& position) -> RpcLibAdapatorsBase::Vector3r {
+            return getWorldSimApi()->getSDFGradient(position.to());
+        });
+
+        pimpl_->server.bind("simLoadSDF", [&](const std::string& filepath) -> bool {
+            return getWorldSimApi()->loadSDF(filepath);
+        });
+
+        pimpl_->server.bind("simSaveSDF", [&](const std::string& filepath) -> bool {
+            return getWorldSimApi()->saveSDF(filepath);
+        });
+        
+
         pimpl_->server.bind("cancelLastTask", [&](const std::string& vehicle_name) -> void {
             getVehicleApi(vehicle_name)->cancelLastTask();
         });

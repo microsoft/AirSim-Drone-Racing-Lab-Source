@@ -21,6 +21,11 @@
 #include <mav_msgs/eigen_mav_msgs.h>
 #include <mav_trajectory_generation/trajectory_sampling.h>
 
+/************************ sdf deps********************************************/
+#include <sdf_tools/sdf.hpp>
+#include <sdf_tools/sdf_generation.hpp>
+#include <sdf_tools/sdf_builder.hpp>
+
 using namespace msr::airlib;
 
 namespace msr

@@ -50,6 +50,9 @@ file(GLOB_RECURSE ${PROJECT_NAME}_sources
   ${AIRSIM_ROOT}/${PROJECT_NAME}/src/mav_trajectory_generation/trajectory.cpp
   ${AIRSIM_ROOT}/${PROJECT_NAME}/src/mav_trajectory_generation/trajectory_sampling.cpp
   ${AIRSIM_ROOT}/${PROJECT_NAME}/src/mav_trajectory_generation/vertex.cpp
+  # sdf source files
+  ${AIRSIM_ROOT}/${PROJECT_NAME}/src/sdf_tools/sdf.cpp
+  ${AIRSIM_ROOT}/${PROJECT_NAME}/src/sdf_tools/sdf_builder.cpp
 )
 
 add_library(${PROJECT_NAME} STATIC ${${PROJECT_NAME}_sources})
