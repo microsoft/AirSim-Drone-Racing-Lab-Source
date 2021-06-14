@@ -168,6 +168,8 @@ fi
 
 echo "Installing Eigen library..."
 
+# Use existing eigen due to finicky "unsupported" dependencies
+
 if [ ! -d "AirLib/deps/eigen3" ]; then
     echo "Downloading Eigen..."
     
