@@ -52,6 +52,32 @@ stages:
                 -project=$(pwd)/Unreal/ADRL.uproject
             displayName: Build ADRL - Development
 
+          # Package ADRL
+          - script: |
+              $(UE4_ROOT)/Engine/Build/BatchFiles/RunUAT.sh BuildCookRun \
+                -project="$(pwd)/Unreal/ADRL.uproject" \
+                -nop4 -nocompile -build -cook -compressed -pak -allmaps -stage \
+                -archive -archivedirectory="$(pwd)/Unreal/ADRL/Packaged/Development" \
+                -clientconfig=Development -clean -utf8output
+            displayName: Package ADRL - Development
+
+          # Publish Artifact for ADRL Linux
+          - task: PublishPipelineArtifact@1
+            inputs:
+              targetPath: 'Unreal/ADRL/Packaged'
+              artifactName: 'ADRL_Linux'
+            displayName: Artifact for ADRL Linux
+            condition: succeededOrFailed()
+
+          - task: ArchiveFiles@2
+            displayName: ADRL Linux Zip
+            inputs:
+              rootFolderOrFile: 'Unreal/ADRL/Packaged'
+              includeRootFolder: false
+              archiveType: 'zip'
+              archiveFile: 'Unreal/ADRL/Packaged/ADRL_Linux.zip'
+              replaceExistingArchive: true
+
           # Build Blocks
           - script: |
               $(UE4_ROOT)/Engine/Build/BatchFiles/Linux/Build.sh Blocks Linux Development \
