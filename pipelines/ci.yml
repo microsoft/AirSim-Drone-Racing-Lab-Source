@@ -20,14 +20,15 @@ stages:
         workspace:
           clean: all
         steps:
-          # Setup / Prereq
           - checkout: self
             submodules: true
+
+          # Setup / Prereq
           - script: |
               ./setup.sh
-            displayName: Install system dependencies
+            displayName: ./setup.sh
 
-          # Build submodules
+          #  submodules
           - script: |
               cd external/gflags_airsim/
               git checkout linux-autobuild
@@ -37,7 +38,6 @@ stages:
               git checkout linux-autobuild
               cd ../
               displayName: Checkout submodules linux branch
-
 
           # Build AirLib
           - script: |
@@ -99,6 +99,19 @@ stages:
 
         steps:
           - checkout: self
+            submodules: true
+
+          #  submodules
+          - script: |
+              cd external/gflags_airsim/
+              git checkout windows-autobuild
+              cd ../../external/glog_airsim
+              git checkout windows-autobuild
+              cd ../../external/nlopt_airsim
+              git checkout windows-autobuild
+              cd ../
+              displayName: Checkout submodules windows branch
+
 
           # Build AirLib
           - script: |
