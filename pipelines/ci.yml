@@ -36,6 +36,8 @@ stages:
               cd ../../external/nlopt_airsim
               git checkout linux-autobuild
               cd ../
+              displayName: Checkout submodules linux branch
+
 
           # Build AirLib
           - script: |
