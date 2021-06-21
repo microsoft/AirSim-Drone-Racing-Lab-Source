@@ -94,6 +94,7 @@ namespace airlib
         virtual void resetRace() = 0;
         virtual bool getDisqualified(const std::string& racer_name) = 0;
         virtual int getLastGatePassed(const std::string& racer_name) = 0;
+        virtual bool setTextureFromUrl(std::string& object_name, std::string& url) = 0;
 
     };
 }

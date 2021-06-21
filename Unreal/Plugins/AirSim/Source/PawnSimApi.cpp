@@ -255,8 +255,7 @@ void PawnSimApi::displayCollisionEffect(FVector hit_location, const FHitResult& 
     if (params_.collision_display_template != nullptr && Utils::isDefinitelyLessThan(hit.ImpactNormal.Z, 0.0f)) {
         UParticleSystemComponent* particles = UGameplayStatics::SpawnEmitterAtLocation(params_.pawn->GetWorld(),
                                                                                        params_.collision_display_template,
-                                                                                       FTransform(hit_location),
-                                                                                       true);
+                                                                                       FTransform(hit_location), true);
         particles->SetWorldScale3D(FVector(0.1f, 0.1f, 0.1f));
     }
 }
@@ -468,8 +467,7 @@ void PawnSimApi::addDetectionFilterMeshName(const std::string& camera_name, Imag
         if (!detection_comp->object_filter_.wildcard_mesh_names_.Contains(name)) {
             detection_comp->object_filter_.wildcard_mesh_names_.Add(name);
         }
-    },
-                                             true);
+    }, true);
 }
 
 void PawnSimApi::clearDetectionMeshNames(const std::string& camera_name, ImageCaptureBase::ImageType image_type)
@@ -477,8 +475,7 @@ void PawnSimApi::clearDetectionMeshNames(const std::string& camera_name, ImageCa
     UAirBlueprintLib::RunCommandOnGameThread([this, camera_name, image_type]() {
         const APIPCamera* camera = getCamera(camera_name);
         camera->getDetectionComponent(image_type, false)->object_filter_.wildcard_mesh_names_.Empty();
-    },
-                                             true);
+    }, true);
 }
 
 void PawnSimApi::setDetectionFilterRadius(const std::string& camera_name, ImageCaptureBase::ImageType image_type, const float radius_cm)
@@ -486,8 +483,7 @@ void PawnSimApi::setDetectionFilterRadius(const std::string& camera_name, ImageC
     UAirBlueprintLib::RunCommandOnGameThread([this, camera_name, image_type, radius_cm]() {
         const APIPCamera* camera = getCamera(camera_name);
         camera->getDetectionComponent(image_type, false)->max_distance_to_camera_ = radius_cm;
-    },
-                                             true);
+    }, true);
 }
 
 std::vector<PawnSimApi::DetectionInfo> PawnSimApi::getDetections(const std::string& camera_name, ImageCaptureBase::ImageType image_type) const
@@ -514,8 +510,7 @@ std::vector<PawnSimApi::DetectionInfo> PawnSimApi::getDetections(const std::stri
 
             result[i].relative_pose = toPose(detections[i].RelativeTransform.GetTranslation(), detections[i].RelativeTransform.GetRotation());
         }
-    },
-                                             true);
+    }, true);
 
     return result;
 }
@@ -616,8 +611,7 @@ void PawnSimApi::setCameraPose(const std::string& camera_name, const msr::airlib
         APIPCamera* camera = getCamera(camera_name);
         FTransform pose_unreal = ned_transform_.fromRelativeNed(pose);
         camera->setCameraPose(pose_unreal);
-    },
-                                             true);
+    }, true);
 }
 
 void PawnSimApi::setCameraFoV(const std::string& camera_name, float fov_degrees)
@@ -625,33 +619,7 @@ void PawnSimApi::setCameraFoV(const std::string& camera_name, float fov_degrees)
     UAirBlueprintLib::RunCommandOnGameThread([this, camera_name, fov_degrees]() {
         APIPCamera* camera = getCamera(camera_name);
         camera->setCameraFoV(fov_degrees);
-    },
-                                             true);
-}
-
-void PawnSimApi::setDistortionParam(const std::string& camera_name, const std::string& param_name, float value)
-{
-    UAirBlueprintLib::RunCommandOnGameThread([this, camera_name, param_name, value]() {
-        APIPCamera* camera = getCamera(camera_name);
-        camera->distortion_param_instance_->SetScalarParameterValue(FName(param_name.c_str()), value);
-    },
-                                             true);
-}
-
-std::vector<float> PawnSimApi::getDistortionParams(const std::string& camera_name)
-{
-    std::vector<float> param_values(5, 0.0);
-    UAirBlueprintLib::RunCommandOnGameThread([this, camera_name, &param_values]() {
-        APIPCamera* camera = getCamera(camera_name);
-        camera->distortion_param_instance_->GetScalarParameterValue(FName(TEXT("K1")), param_values[0]);
-        camera->distortion_param_instance_->GetScalarParameterValue(FName(TEXT("K2")), param_values[1]);
-        camera->distortion_param_instance_->GetScalarParameterValue(FName(TEXT("K3")), param_values[2]);
-        camera->distortion_param_instance_->GetScalarParameterValue(FName(TEXT("P1")), param_values[3]);
-        camera->distortion_param_instance_->GetScalarParameterValue(FName(TEXT("P2")), param_values[4]);
-    },
-                                             true);
-
-    return param_values;
+    }, true);
 }
 
 void PawnSimApi::setDistortionParam(const std::string& camera_name, const std::string& param_name, float value)
@@ -694,8 +662,7 @@ void PawnSimApi::setPose(const Pose& pose, bool ignore_collision)
 {
     UAirBlueprintLib::RunCommandOnGameThread([this, pose, ignore_collision]() {
         setPoseInternal(pose, ignore_collision);
-    },
-                                             true);
+    }, true);
 }
 
 void PawnSimApi::setPoseInternal(const Pose& pose, bool ignore_collision)
