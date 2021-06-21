@@ -22,9 +22,20 @@ stages:
         steps:
           # Setup / Prereq
           - checkout: self
+            submodules: true
           - script: |
               ./setup.sh
             displayName: Install system dependencies
+
+          # Build submodules
+          - script: |
+              cd external/gflags_airsim/
+              git checkout linux-autobuild
+              cd ../../external/glog_airsim
+              git checkout linux-autobuild
+              cd ../../external/nlopt_airsim
+              git checkout linux-autobuild
+              cd ../
 
           # Build AirLib
           - script: |
