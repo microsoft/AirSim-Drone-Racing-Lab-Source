@@ -37,19 +37,21 @@ stages:
               cd ../../external/nlopt_airsim
               git checkout linux-autobuild
               cd ../
-              displayName: Checkout submodules linux branch
+            displayName: Checkout submodules linux branch
 
           # Build AirLib
           - script: |
               ./build.sh
             displayName: Build AirLib
 
-          # Build UE Blocks project
+           # Build ADRL
           - script: |
-              ./update_from_git.sh
-            workingDirectory: Unreal/Environments/Blocks
-            displayName: Copy AirLib to Blocks (update_from_git.sh)
-            
+              $(UE4_ROOT)/Engine/Build/BatchFiles/Linux/Build.sh Blocks Linux Development \
+                -project=$(pwd)/Unreal/ADRL.uproject
+              $(UE4_ROOT)/Engine/Build/BatchFiles/Linux/Build.sh BlocksEditor Linux Development \
+                -project=$(pwd)/Unreal/ADRL.uproject
+            displayName: Build ADRL - Development
+
           # Build Blocks
           - script: |
               $(UE4_ROOT)/Engine/Build/BatchFiles/Linux/Build.sh Blocks Linux Development \
@@ -119,11 +121,11 @@ stages:
               call .\build.cmd
             displayName: Build AirLib
 
+          # Build ADRL
           - script: |
-              call "C:\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
-              call .\update_from_git_ci.bat
-            workingDirectory: Unreal/Environments/Blocks
-            displayName: Copy AirLib to Blocks (update_from_git_ci.bat)
+              call "%UE4_ROOT%\Engine\Build\BatchFiles\Build.bat" Blocks Win64 Development -project="%CD%\Unreal\ADRL.uproject"
+              call "%UE4_ROOT%\Engine\Build\BatchFiles\Build.bat" BlocksEditor Win64 Development -project="%CD%\Unreal\ADRL.uproject"
+            displayName: Build ADRL - Development
 
           # Build Blocks
           - script: |
