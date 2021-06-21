@@ -420,9 +420,9 @@ __pragma(warning(disable : 4239))
             return pimpl_->client.call("simGetObjectScale", object_name).as<RpcLibAdaptorsBase::Vector3r>().to();
         }
 
-        msr::airlib::Pose RpcLibClientBase::simGetObjectPose(const std::string& object_name) const
+        msr::airlib::Pose RpcLibClientBase::simGetObjectPose(const std::string& object_name, bool add_noise) const
         {
-            return pimpl_->client.call("simGetObjectPose", object_name).as<RpcLibAdaptorsBase::Pose>().to();
+            return pimpl_->client.call("simGetObjectPose", object_name, add_noise).as<RpcLibAdaptorsBase::Pose>().to();
         }
 
         bool RpcLibClientBase::simSetObjectPose(const std::string& object_name, const msr::airlib::Pose& pose, bool teleport)

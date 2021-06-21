@@ -327,12 +327,10 @@ WorldSimApi::Pose WorldSimApi::getObjectPose(const std::string& object_name, boo
 {
     Pose result;  
     UAirBlueprintLib::RunCommandOnGameThread([this, &object_name, &result]() {
-        // AActor* actor = UAirBlueprintLib::FindActor<AActor>(simmode_, FString(object_name.c_str()));
-        AActor* actor = simmode_->scene_object_map.FindRef(FString(object_name.c_str()));
+        AActor* actor = UAirBlueprintLib::FindActor<AActor>(simmode_, FString(object_name.c_str()));
         result = actor ? simmode_->getGlobalNedTransform().toGlobalNed(FTransform(actor->GetActorRotation(), actor->GetActorLocation()))
-                       : Pose::nanPose();
-    },
-                                             true);
+            : Pose::nanPose();
+    }, true);
 
     // give noisy pose always if level 2 or 3
 	std::regex compiledRegex(".*[Gg]ate.*", std::regex::optimize);
@@ -661,6 +659,8 @@ std::vector<std::string> WorldSimApi::listVehicles() const
 std::string WorldSimApi::getSettingsString() const
 {
     return msr::airlib::AirSimSettings::singleton().settings_text_;
+}
+
 // Race API
 void WorldSimApi::disableRaceLogging()
 {

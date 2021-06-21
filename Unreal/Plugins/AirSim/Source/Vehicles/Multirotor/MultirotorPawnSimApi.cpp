@@ -157,14 +157,21 @@ void MultirotorPawnSimApi::updateRendering(float dt)
     pawn_events_->getActuatorSignal().emit(rotor_actuator_info_);
 }
 
+// void MultirotorPawnSimApi::setPose(const Pose& pose, bool ignore_collision)
+// {
+//     multirotor_physics_body_->lock();
+//     multirotor_physics_body_->setPose(pose);
+//     multirotor_physics_body_->setGrounded(false);
+//     multirotor_physics_body_->unlock();
+//     pending_pose_collisions_ = ignore_collision;
+//     pending_pose_status_ = PendingPoseStatus::RenderPending;
+// }
+
 void MultirotorPawnSimApi::setPose(const Pose& pose, bool ignore_collision)
 {
-    multirotor_physics_body_->lock();
-    multirotor_physics_body_->setPose(pose);
-    multirotor_physics_body_->setGrounded(false);
-    multirotor_physics_body_->unlock();
+    pending_phys_pose_ = pose;
     pending_pose_collisions_ = ignore_collision;
-    pending_pose_status_ = PendingPoseStatus::RenderPending;
+    pending_pose_status_ = PendingPoseStatus::RenderStatePending;
 }
 
 //*** Start: UpdatableState implementation ***//

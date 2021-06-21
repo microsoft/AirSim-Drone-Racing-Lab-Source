@@ -76,6 +76,7 @@ private:
     enum class PendingPoseStatus
     {
         NonePending,
+        RenderStatePending,
         RenderPending
     } pending_pose_status_;
     Pose pending_phys_pose_; //force new pose through API
