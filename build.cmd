@@ -15,7 +15,7 @@ git checkout windows-autobuild
 chdir /d %ROOT_DIR%
 
 REM // Check command line arguments
-set "noFullPolyCar="
+set "noFullPolyCar=y"
 set "buildMode="
 
 REM //check VS version
@@ -45,20 +45,6 @@ if "%2"=="--RelWithDebInfo" set "buildMode=RelWithDebInfo"
 
 :noargs
 
-set powershell=powershell
-where powershell > nul 2>&1
-if ERRORLEVEL 1 goto :pwsh
-echo found Powershell && goto start
-:pwsh
-set powershell=pwsh
-where pwsh > nul 2>&1
-if ERRORLEVEL 1 goto :nopwsh
-set PWSHV7=1
-echo found pwsh && goto start
-:nopwsh
-echo Powershell or pwsh not found, please install it.
-goto :eof
-
 :start
 chdir /d %ROOT_DIR% 
 
@@ -85,18 +71,14 @@ IF NOT EXIST external\rpclib\%RPC_VERSION_FOLDER% (
     ECHO *****************************************************************************************
     ECHO Downloading rpclib
     ECHO *****************************************************************************************
-    @echo on
-    if "%PWSHV7%" == "" (
-        %powershell% -command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; iwr https://github.com/rpclib/rpclib/archive/v2.3.0.zip -OutFile external\rpclib.zip }"
-    ) else (
-        %powershell% -command "iwr https://github.com/rpclib/rpclib/archive/v2.3.0.zip -OutFile external\rpclib.zip"
-    )
-    @echo off
-    
+	@echo on
+	powershell -command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; iwr https://github.com/rpclib/rpclib/archive/v2.2.1.zip -OutFile external\rpclib.zip }"
+	@echo off
+
     REM //remove any previous versions
     rmdir external\rpclib /q /s
 
-    %powershell% -command "Expand-Archive -Path external\rpclib.zip -DestinationPath external\rpclib"
+	powershell -command "& { Expand-Archive -Path external\rpclib.zip -DestinationPath external\rpclib }"
     del external\rpclib.zip /q
     
     REM //Fail the build if unable to download rpclib
@@ -193,40 +175,6 @@ robocopy /MIR external\rpclib\%RPC_VERSION_FOLDER%\build\Release %RPCLIB_TARGET_
 robocopy /MIR external\rpclib\%RPC_VERSION_FOLDER%\build\%buildMode% %RPCLIB_TARGET_LIB%\%buildMode%
 )
 
-REM //---------- get High PolyCount SUV Car Model ------------
-IF NOT EXIST Unreal\Plugins\AirSim\Content\VehicleAdv mkdir Unreal\Plugins\AirSim\Content\VehicleAdv
-IF NOT EXIST Unreal\Plugins\AirSim\Content\VehicleAdv\SUV\v1.2.0 (
-    IF NOT DEFINED noFullPolyCar (
-        REM //leave some blank lines because %powershell% shows download banner at top of console
-        ECHO(   
-        ECHO(   
-        ECHO(   
-        ECHO *****************************************************************************************
-        ECHO Downloading high-poly car assets.... The download is ~37MB and can take some time.
-        ECHO To install without this assets, re-run build.cmd with the argument --no-full-poly-car
-        ECHO *****************************************************************************************
-       
-        IF EXIST suv_download_tmp rmdir suv_download_tmp /q /s
-        mkdir suv_download_tmp
-        @echo on
-        REM %powershell% -command "& { Start-BitsTransfer -Source https://github.com/Microsoft/AirSim/releases/download/v1.2.0/car_assets.zip -Destination suv_download_tmp\car_assets.zip }"
-        REM %powershell% -command "& { (New-Object System.Net.WebClient).DownloadFile('https://github.com/Microsoft/AirSim/releases/download/v1.2.0/car_assets.zip', 'suv_download_tmp\car_assets.zip') }"
-        if "%PWSHV7%" == "" (
-            %powershell% -command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; iwr https://github.com/Microsoft/AirSim/releases/download/v1.2.0/car_assets.zip -OutFile suv_download_tmp\car_assets.zip }"
-        ) else (
-            %powershell% -command "iwr https://github.com/Microsoft/AirSim/releases/download/v1.2.0/car_assets.zip -OutFile suv_download_tmp\car_assets.zip"
-        )
-        @echo off
-        rmdir /S /Q Unreal\Plugins\AirSim\Content\VehicleAdv\SUV
-        %powershell% -command "Expand-Archive -Path suv_download_tmp\car_assets.zip -DestinationPath Unreal\Plugins\AirSim\Content\VehicleAdv"
-        rmdir suv_download_tmp /q /s
-        
-        REM //Don't fail the build if the high-poly car is unable to be downloaded
-        REM //Instead, just notify users that the gokart will be used.
-        IF NOT EXIST Unreal\Plugins\AirSim\Content\VehicleAdv\SUV ECHO Unable to download high-polycount SUV. Your AirSim build will use the default vehicle.
-    ) else (
-        ECHO Not downloading high-poly car asset. The default unreal vehicle will be used.
-    )
 REM //---------- copy gflags binaries and include folder inside AirLib folder ----------
 set GFLAGS_TARGET_LIB=AirLib\deps\gflagslib\lib\x64
 if NOT exist %GFLAGS_TARGET_LIB% mkdir %GFLAGS_TARGET_LIB%
@@ -278,18 +226,9 @@ robocopy /MIR external\nlopt_airsim\build\Release %NLOPT_TARGET_LIB%\Release
 REM //---------- get Eigen library ----------
 IF NOT EXIST AirLib\deps mkdir AirLib\deps
 IF NOT EXIST AirLib\deps\eigen3 (
-    if "%PWSHV7%" == "" (
-        %powershell% -command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; iwr https://gitlab.com/libeigen/eigen/-/archive/3.3.7/eigen-3.3.7.zip -OutFile eigen3.zip }"
-    ) else (
-        %powershell% -command "iwr https://gitlab.com/libeigen/eigen/-/archive/3.3.7/eigen-3.3.7.zip -OutFile eigen3.zip"
-    )
-    %powershell% -command "Expand-Archive -Path eigen3.zip -DestinationPath AirLib\deps"
-    %powershell% -command "Move-Item -Path AirLib\deps\eigen* -Destination AirLib\deps\del_eigen"
-    REM move AirLib\deps\eigen* AirLib\deps\del_eigen
     mkdir AirLib\deps\eigen3
-    move AirLib\deps\del_eigen\Eigen AirLib\deps\eigen3\Eigen
-    rmdir /S /Q AirLib\deps\del_eigen
-    del eigen3.zip
+    move eigen3\Eigen AirLib\deps\eigen3\Eigen
+    move eigen3\unsupported AirLib\deps\eigen3\unsupported
 )
 IF NOT EXIST AirLib\deps\eigen3 goto :buildfailed
 
