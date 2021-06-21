@@ -123,55 +123,53 @@ public class AirSim : ModuleRules
         {
             // needed when packaging
             PublicAdditionalLibraries.Add("stdc++");
-            {
-                // needed when packaging
-            }
-
-            static void CopyFileIfNewer(string srcFilePath, string destFolder)
-            {
-                FileInfo srcFile = new FileInfo(srcFilePath);
-                FileInfo destFile = new FileInfo(Path.Combine(destFolder, srcFile.Name));
-                if (!destFile.Exists || srcFile.LastWriteTime > destFile.LastWriteTime)
-                {
-                    srcFile.CopyTo(destFile.FullName, true);
-                }
-                //else skip
-            }
-
-            private bool LoadAirSimDependency(ReadOnlyTargetRules Target, string LibName, string LibFileName)
-            {
-                string LibrariesPath = Path.Combine(AirLibPath, "deps", LibName, "lib");
-                return AddLibDependency(LibName, LibrariesPath, LibFileName, Target, true);
-            }
-
-            private bool AddLibDependency(string LibName, string LibPath, string LibFileName, ReadOnlyTargetRules Target, bool IsAddLibInclude)
-            {
-                string PlatformString = (Target.Platform == UnrealTargetPlatform.Win64 || Target.Platform == UnrealTargetPlatform.Mac) ? "x64" : "x86";
-                string ConfigurationString = (Target.Configuration == UnrealTargetConfiguration.Debug) ? "Debug" : "Release";
-                bool isLibrarySupported = false;
-
-
-                if (Target.Platform == UnrealTargetPlatform.Win64)
-                {
-                    isLibrarySupported = true;
-
-                    PublicAdditionalLibraries.Add(Path.Combine(LibPath, PlatformString, ConfigurationString, LibFileName + ".lib"));
-                }
-                else if (Target.Platform == UnrealTargetPlatform.Linux || Target.Platform == UnrealTargetPlatform.Mac)
-                {
-                    isLibrarySupported = true;
-                    PublicAdditionalLibraries.Add(Path.Combine(LibPath, "lib" + LibFileName + ".a"));
-                }
-
-
-
-                if (isLibrarySupported && IsAddLibInclude)
-                {
-                    // Include path
-                    PublicIncludePaths.Add(Path.Combine(AirLibPath, "deps", LibName, "include"));
-                }
-                PublicDefinitions.Add(string.Format("WITH_" + LibName.ToUpper() + "_BINDING={0}", isLibrarySupported ? 1 : 0));
-
-                return isLibrarySupported;
-            }
+            PublicAdditionalLibraries.Add("supc++");
         }
+    }
+
+    static void CopyFileIfNewer(string srcFilePath, string destFolder)
+    {
+        FileInfo srcFile = new FileInfo(srcFilePath);
+        FileInfo destFile = new FileInfo(Path.Combine(destFolder, srcFile.Name));
+        if (!destFile.Exists || srcFile.LastWriteTime > destFile.LastWriteTime)
+        {
+            srcFile.CopyTo(destFile.FullName, true);
+        }
+        //else skip
+    }
+
+    private bool LoadAirSimDependency(ReadOnlyTargetRules Target, string LibName, string LibFileName)
+    {
+        string LibrariesPath = Path.Combine(AirLibPath, "deps", LibName, "lib");
+        return AddLibDependency(LibName, LibrariesPath, LibFileName, Target, true);
+    }
+
+    private bool AddLibDependency(string LibName, string LibPath, string LibFileName, ReadOnlyTargetRules Target, bool IsAddLibInclude)
+    {
+        string PlatformString = (Target.Platform == UnrealTargetPlatform.Win64 || Target.Platform == UnrealTargetPlatform.Mac) ? "x64" : "x86";
+        string ConfigurationString = (Target.Configuration == UnrealTargetConfiguration.Debug) ? "Debug" : "Release";
+        bool isLibrarySupported = false;
+
+
+        if (Target.Platform == UnrealTargetPlatform.Win64)
+        {
+            isLibrarySupported = true;
+
+            PublicAdditionalLibraries.Add(Path.Combine(LibPath, PlatformString, ConfigurationString, LibFileName + ".lib"));
+        }
+        else if (Target.Platform == UnrealTargetPlatform.Linux || Target.Platform == UnrealTargetPlatform.Mac)
+        {
+            isLibrarySupported = true;
+            PublicAdditionalLibraries.Add(Path.Combine(LibPath, "lib" + LibFileName + ".a"));
+        }
+
+        if (isLibrarySupported && IsAddLibInclude)
+        {
+            // Include path
+            PublicIncludePaths.Add(Path.Combine(AirLibPath, "deps", LibName, "include"));
+        }
+        PublicDefinitions.Add(string.Format("WITH_" + LibName.ToUpper() + "_BINDING={0}", isLibrarySupported ? 1 : 0));
+
+        return isLibrarySupported;
+    }
+}
