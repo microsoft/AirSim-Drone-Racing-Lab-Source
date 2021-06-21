@@ -110,7 +110,7 @@ stages:
               cd ../../external/nlopt_airsim
               git checkout windows-autobuild
               cd ../
-              displayName: Checkout submodules windows branch
+            displayName: Checkout submodules windows branch
 
 
           # Build AirLib
