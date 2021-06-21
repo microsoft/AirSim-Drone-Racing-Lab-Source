@@ -67,10 +67,6 @@ namespace airlib
 	{
 		return cancelable_action_.isCancelled();
 	}
-private:
-    TTimeDelta sleep_duration_, timeout_sec_;
-    CancelToken& cancelable_action_;
-    bool is_complete_; //each waiter should maintain its own complete status
 
     private:
         TTimeDelta sleep_duration_, timeout_sec_;

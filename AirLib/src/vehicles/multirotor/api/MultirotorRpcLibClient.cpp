@@ -270,8 +270,8 @@ __pragma(warning(disable : 4239))
             bool viz_traj, const vector<float>& viz_traj_color_rgba, 
             bool replan_from_lookahead, float replan_lookahead_sec, const std::string& vehicle_name)
         {
-            vector<MultirotorRpcLibAdapators::Vector3r> conv_path;
-            MultirotorRpcLibAdapators::from(path, conv_path);
+            vector<MultirotorRpcLibAdaptors::Vector3r> conv_path;
+            MultirotorRpcLibAdaptors::from(path, conv_path);
             pimpl_->last_future = static_cast<rpc::client*>(getClient())->async_call("moveOnSpline", conv_path, 
                 add_position_constraint, add_velocity_constraint, add_acceleration_constraint, 
                 vel_max, acc_max, 
@@ -286,10 +286,10 @@ __pragma(warning(disable : 4239))
             bool viz_traj, const vector<float>& viz_traj_color_rgba, 
             bool replan_from_lookahead, float replan_lookahead_sec, const std::string& vehicle_name)
         {
-            vector<MultirotorRpcLibAdapators::Vector3r> conv_path;
-            vector<MultirotorRpcLibAdapators::Vector3r> conv_velocities;
-            MultirotorRpcLibAdapators::from(path, conv_path);
-            MultirotorRpcLibAdapators::from(velocities, conv_velocities);
+            vector<MultirotorRpcLibAdaptors::Vector3r> conv_path;
+            vector<MultirotorRpcLibAdaptors::Vector3r> conv_velocities;
+            MultirotorRpcLibAdaptors::from(path, conv_path);
+            MultirotorRpcLibAdaptors::from(velocities, conv_velocities);
             pimpl_->last_future = static_cast<rpc::client*>(getClient())->async_call("moveOnSplineVelConstraints", conv_path, conv_velocities, 
                 add_position_constraint, add_velocity_constraint, add_acceleration_constraint, 
                 vel_max, acc_max, 

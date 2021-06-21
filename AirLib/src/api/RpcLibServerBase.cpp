@@ -431,9 +431,9 @@ namespace airlib
 
         //// ADRL Race API
 
-        pimpl_->server.bind("simGetObjectScaleInternal", [&](const std::string& object_name) -> RpcLibAdapatorsBase::Vector3r {
+        pimpl_->server.bind("simGetObjectScaleInternal", [&](const std::string& object_name) -> RpcLibAdaptorsBase::Vector3r {
             const auto& scale = getWorldSimApi()->getObjectScaleInternal(object_name);
-            return RpcLibAdapatorsBase::Vector3r(scale);
+            return RpcLibAdaptorsBase::Vector3r(scale);
         });
         pimpl_->server.bind("simLogMultirotorState", [&](bool is_enabled, const std::string& vehicle_name) -> void {
             getVehicleSimApi(vehicle_name)->setStateLogStatus(is_enabled);

@@ -257,6 +257,20 @@ inline T angular_dist(T from, T to)
         virtual bool setSafety(SafetyEval::SafetyViolationType enable_reasons, float obs_clearance, SafetyEval::ObsAvoidanceStrategy obs_startegy,
                                float obs_avoidance_vel, const Vector3r& origin, float xy_length, float max_z, float min_z);
 
+        /************************* moveOnSpline *********************************/
+        virtual void setTrajectoryTrackerGains(const vector<float>& gains);
+        virtual bool moveOnSpline(const vector<Vector3r>& path, 
+                                bool add_position_constraint, bool add_velocity_constraint, bool add_acceleration_constraint, 
+                                float vel_max, float acc_max, 
+                                bool viz_traj, const vector<float>& viz_traj_color_rgba, 
+                                bool replan_from_lookahead, float replan_lookahead_sec);
+        virtual bool moveOnSplineVelConstraints(const vector<Vector3r>& path, const vector<Vector3r>& velocities, 
+                                                bool add_position_constraint, bool add_velocity_constraint, bool add_acceleration_constraint, 
+                                                float vel_max, float acc_max, 
+                                                bool viz_traj, const vector<float>& viz_traj_color_rgba, 
+                                                bool replan_from_lookahead, float replan_lookahead_sec);
+        virtual void clearTrajectory();
+
         /************************* high level status APIs *********************************/
         RotorStates getRotorStates() const
         {

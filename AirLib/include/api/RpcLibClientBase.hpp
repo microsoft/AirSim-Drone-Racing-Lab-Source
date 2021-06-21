@@ -142,6 +142,19 @@ namespace airlib
 
         std::string getSettingsString() const;
 
+
+        // ADRL - internal APIs
+        // Race API
+        Vector3r simGetObjectScaleInternal(const std::string& object_name) const;
+        void simDisableRaceLog();
+        void simStartRace(int tier);
+        void simStartBenchmarkRace(int tier);
+        void simResetRace();
+        bool simGetDisqualified(const std::string& racer_name);
+        int simGetLastGatePassed(const std::string& racer_name);
+        void simLogMultirotorState(bool is_enabled, const std::string& vehicle_name = "") const;
+
+
     protected:
         void* getClient();
         const void* getClient() const;

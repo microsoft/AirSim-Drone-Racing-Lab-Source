@@ -546,7 +546,7 @@ __pragma(warning(disable : 4239))
         //  ADRL:
         msr::airlib::Vector3r RpcLibClientBase::simGetObjectScaleInternal(const std::string& object_name) const
         {
-            return pimpl_->client.call("simGetObjectScaleInternal", object_name).as<RpcLibAdapatorsBase::Vector3r>().to();
+            return pimpl_->client.call("simGetObjectScaleInternal", object_name).as<RpcLibAdaptorsBase::Vector3r>().to();
         }
 
         void RpcLibClientBase::simLogMultirotorState(bool is_enabled, const std::string& vehicle_name) const

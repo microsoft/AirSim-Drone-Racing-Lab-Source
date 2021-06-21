@@ -137,26 +137,26 @@ namespace airlib
             getVehicleApi(vehicle_name)->clearTrajectory();
         });
         (static_cast<rpc::server*>(getServer()))->
-            bind("moveOnSpline", [&](const vector<MultirotorRpcLibAdapators::Vector3r>& path, 
+            bind("moveOnSpline", [&](const vector<MultirotorRpcLibAdaptors::Vector3r>& path, 
                     bool add_position_constraint, bool add_velocity_constraint, bool add_acceleration_constraint, 
                     float vel_max, float acc_max, 
                     bool viz_traj, const vector<float>& viz_traj_color_rgba, 
                     bool replan_from_lookahead, float replan_lookahead_sec, const std::string& vehicle_name) -> bool {
                 vector<Vector3r> conv_path;
-                MultirotorRpcLibAdapators::to(path, conv_path);
+                MultirotorRpcLibAdaptors::to(path, conv_path);
                 return getVehicleApi(vehicle_name)->moveOnSpline(conv_path, add_position_constraint, add_velocity_constraint, add_acceleration_constraint, 
                     vel_max, acc_max, viz_traj, viz_traj_color_rgba, replan_from_lookahead, replan_lookahead_sec);
         });
         (static_cast<rpc::server*>(getServer()))->
-            bind("moveOnSplineVelConstraints", [&](const vector<MultirotorRpcLibAdapators::Vector3r>& path, const vector<MultirotorRpcLibAdapators::Vector3r>& velocities, 
+            bind("moveOnSplineVelConstraints", [&](const vector<MultirotorRpcLibAdaptors::Vector3r>& path, const vector<MultirotorRpcLibAdaptors::Vector3r>& velocities, 
                     bool add_position_constraint, bool add_velocity_constraint, bool add_acceleration_constraint, 
                     float vel_max, float acc_max, 
                     bool viz_traj, const vector<float>& viz_traj_color_rgba, 
                     bool replan_from_lookahead, float replan_lookahead_sec, const std::string& vehicle_name) -> bool {
                 vector<Vector3r> conv_path;
                 vector<Vector3r> conv_velocities;
-                MultirotorRpcLibAdapators::to(path, conv_path);
-                MultirotorRpcLibAdapators::to(velocities, conv_velocities);
+                MultirotorRpcLibAdaptors::to(path, conv_path);
+                MultirotorRpcLibAdaptors::to(velocities, conv_velocities);
                 return getVehicleApi(vehicle_name)->moveOnSplineVelConstraints(conv_path, conv_velocities, add_position_constraint, add_velocity_constraint, add_acceleration_constraint, 
                     vel_max, acc_max, viz_traj, viz_traj_color_rgba, replan_from_lookahead, replan_lookahead_sec);
         });

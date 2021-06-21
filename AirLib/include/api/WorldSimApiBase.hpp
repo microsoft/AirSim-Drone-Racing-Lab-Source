@@ -85,6 +85,16 @@ namespace airlib
         virtual vector<string> listVehicles() const = 0;
 
         virtual std::string getSettingsString() const = 0;
+
+        // Race API
+        virtual Vector3r getObjectScaleInternal(const std::string& object_name) const = 0;
+        virtual void disableRaceLogging() = 0;
+        virtual void startRace(const int tier=1) = 0;
+        virtual void startBenchmarkRace(const int tier = 1) = 0;
+        virtual void resetRace() = 0;
+        virtual bool getDisqualified(const std::string& racer_name) = 0;
+        virtual int getLastGatePassed(const std::string& racer_name) = 0;
+
     };
 }
 } //namespace
