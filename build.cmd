@@ -72,7 +72,7 @@ IF NOT EXIST external\rpclib\%RPC_VERSION_FOLDER% (
     ECHO Downloading rpclib
     ECHO *****************************************************************************************
 	@echo on
-	powershell -command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; iwr https://github.com/rpclib/rpclib/archive/v2.2.1.zip -OutFile external\rpclib.zip }"
+	powershell -command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; iwr https://github.com/rpclib/rpclib/archive/v2.3.0.zip -OutFile external\rpclib.zip }"
 	@echo off
 
     REM //remove any previous versions
