@@ -498,6 +498,12 @@ __pragma(warning(disable : 4239))
         {
             return pimpl_->client.call("simGetSignedDistance", RpcLibAdaptorsBase::Vector3r(position)).as<double>();
         }
+        std::vector<double> RpcLibClientBase::simGetSignedDistances(const std::vector<Vector3r>& positions)
+        {
+            vector<RpcLibAdapatorsBase::Vector3r> conv_positions;
+            RpcLibAdapatorsBase::from(positions, conv_positions);
+            return pimpl_->client.call("simGetSignedDistances", vector<RpcLibAdapatorsBase::Vector3r>(conv_positions)).as<std::vector<double>>();
+        }
         msr::airlib::Vector3r RpcLibClientBase::simGetSDFGradient(const msr::airlib::Vector3r& position)
         {
             return pimpl_->client.call("simGetSDFGradient", RpcLibAdaptorsBase::Vector3r(position)).as<RpcLibAdaptorsBase::Vector3r>().to();

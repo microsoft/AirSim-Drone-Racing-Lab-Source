@@ -1023,6 +1023,22 @@ class VehicleClient:
         """
         return self.client.call("simGetSignedDistance", position)
 
+    def simGetSignedDistances(self, positions):
+        """
+        Get signed distance of a list of points (distance to the closest 'object surface') 
+        in the environment. Requires signed distance field to be built beforehand. 
+
+        Distance is positive if the point is in free space, and negative if the point is 
+        inside an object. 
+
+        Args:
+            positions (list): List of global positions at which distance is to be computed (m)
+
+        Returns:
+            dists (list)
+        """
+        return self.client.call("simGetSignedDistances", positions)
+
     def simGetSDFGradient(self, position):
         """
         Get the SDF gradient at a point (vector pointing away from the closest

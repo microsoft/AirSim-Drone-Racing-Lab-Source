@@ -80,6 +80,7 @@ namespace airlib
         virtual bool buildSDF(const Vector3r& position, const double& x_size, const double& y_size, const double& z_size, const float& res) = 0;
         virtual Vector3r projectToCollisionFree(const Vector3r& position, const double& mindist) = 0;
         virtual double getSignedDistance(const Vector3r& position) = 0;
+        virtual std::vector<double> getSignedDistances(const std::vector<Vector3r>& positions) = 0;
         virtual Vector3r getSDFGradient(const Vector3r& position) = 0;
         virtual bool isOccupied(const Vector3r& position) = 0;    
         virtual bool saveSDF(const std::string& filepath) = 0;

@@ -277,6 +277,17 @@ double WorldSimApi::getSignedDistance(const Vector3r& position)
     return dist.first;
 }
 
+std::vector<double> WorldSimApi::getSignedDistances(const std::vector<Vector3r>& positions)
+{
+    std::vector<double> distances;
+
+    for (auto &position : positions) {
+        std::pair <double, bool> dist = sdf_.EstimateDistance3d(position.cast<double>());
+        distances.push_back(dist.first);
+    }
+    return distances;
+}
+
 Vector3r WorldSimApi::getSDFGradient(const Vector3r& position)
 {
     std::vector <double> gradient = sdf_.GetAutoDiffGradient3d(position.cast<double>());

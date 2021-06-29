@@ -74,6 +74,7 @@ public:
     virtual bool buildSDF(const Vector3r& position, const double& x_size, const double& y_size, const double& z_size, const float& res) override;
     virtual Vector3r projectToCollisionFree(const Vector3r& position, const double& mindist) override;
     virtual double getSignedDistance(const Vector3r& position) override;
+    virtual std::vector<double> getSignedDistances(const std::vector<Vector3r>& positions) override;
     virtual Vector3r getSDFGradient(const Vector3r& position) override;
     virtual bool isOccupied(const Vector3r& position) override;
     virtual bool saveSDF(const std::string& filepath) override;
