@@ -226,15 +226,12 @@ robocopy /MIR external\nlopt_airsim\build\Release %NLOPT_TARGET_LIB%\Release
 REM //---------- get Eigen library ----------
 IF NOT EXIST AirLib\deps mkdir AirLib\deps
 IF NOT EXIST AirLib\deps\eigen3 (
-    powershell -command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; iwr https://gitlab.com/libeigen/eigen/-/archive/3.3.7/eigen-3.3.7.zip -OutFile eigen3.zip }"
-    powershell -command "Expand-Archive -Path eigen3.zip -DestinationPath AirLib\deps"
-    powershell -command "Move-Item -Path AirLib\deps\eigen* -Destination AirLib\deps\del_eigen"
-    REM move AirLib\deps\eigen* AirLib\deps\del_eigen
     mkdir AirLib\deps\eigen3
-    move eigen3\Eigen AirLib\deps\eigen3\Eigen
-    move eigen3\unsupported AirLib\deps\eigen3\unsupported
+    Xcopy /E /I eigen3\Eigen AirLib\deps\eigen3\Eigen
+    Xcopy /E /I eigen3\unsupported AirLib\deps\eigen3\unsupported
 )
 IF NOT EXIST AirLib\deps\eigen3 goto :buildfailed
+
 IF NOT EXIST build_debug (
 	mkdir build_debug
 	cd build_debug
@@ -251,15 +248,18 @@ IF NOT EXIST build_debug (
 	cd ..
 )
 
-
 REM //---------- now we have all dependencies to compile AirSim.sln which will also compile MavLinkCom ----------
-if "%buildMode%" == "" (
+cd build_debug
+if "%buildMode%" == "--Debug" (
+msbuild -maxcpucount:12 /p:Platform=x64 /p:Configuration=Debug AirSim.sln
+if ERRORLEVEL 1 goto :buildfailed
+) else if "%buildMode%" == "--Release" (
+msbuild -maxcpucount:12 /p:Platform=x64 /p:Configuration=Release AirSim.sln
+if ERRORLEVEL 1 goto :buildfailed
+) else (
 msbuild -maxcpucount:12 /p:Platform=x64 /p:Configuration=Debug AirSim.sln
 if ERRORLEVEL 1 goto :buildfailed
 msbuild -maxcpucount:12 /p:Platform=x64 /p:Configuration=Release AirSim.sln 
-if ERRORLEVEL 1 goto :buildfailed
-) else (
-msbuild -maxcpucount:12 /p:Platform=x64 /p:Configuration=%buildMode% AirSim.sln
 if ERRORLEVEL 1 goto :buildfailed
 )
 cd ..
