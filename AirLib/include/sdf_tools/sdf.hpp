@@ -14,7 +14,7 @@
 
 // In Ubuntu 18.04,  UE 4.25 | clang8 can't find omp.h. so add full path manually
 #ifdef __linux__
-#include </usr/lib/llvm-8/lib/clang/8.0.1/include/omp.h>
+#include </usr/lib/llvm-9/lib/clang/9.0.1/include/omp.h>
 #else
 #include <omp.h>
 #endif

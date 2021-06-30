@@ -41,8 +41,8 @@ if [ "$(uname)" == "Darwin" ]; then
     export CC=/usr/local/opt/llvm@8/bin/clang
     export CXX=/usr/local/opt/llvm@8/bin/clang++
 else
-    export CC="clang-8"
-    export CXX="clang++-8"
+    export CC="clang-9"
+    export CXX="clang++-9"
 fi
 # install moveOnSpline components
 if [ ! -d "./external/gflags_airsim" ]; then 
@@ -111,8 +111,8 @@ if [ "$(uname)" == "Darwin" ]; then
     export CC=/usr/local/opt/llvm@8/bin/clang
     export CXX=/usr/local/opt/llvm@8/bin/clang++
 else
-    export CC="clang-8"
-    export CXX="clang++-8"
+    export CC="clang-9"
+    export CXX="clang++-9"
 fi
 
 #install EIGEN library
