@@ -397,24 +397,24 @@ namespace airlib
             return getWorldSimApi()->createVoxelGrid(position.to(), x, y, z, res, output_file);
         });
 
-        pimpl_->server.bind("simBuildSDF", [&](const RpcLibAdapatorsBase::Vector3r& position, const double& x, const double& y, const double& z, const float& res) -> bool {
+        pimpl_->server.bind("simBuildSDF", [&](const RpcLibAdaptorsBase::Vector3r& position, const double& x, const double& y, const double& z, const float& res) -> bool {
             return getWorldSimApi()->buildSDF(position.to(), x, y, z, res);
         });
         
-        pimpl_->server.bind("simProjectToFreeSpace", [&](const RpcLibAdapatorsBase::Vector3r& position, const double& mindist) -> RpcLibAdapatorsBase::Vector3r {
+        pimpl_->server.bind("simProjectToFreeSpace", [&](const RpcLibAdaptorsBase::Vector3r& position, const double& mindist) -> RpcLibAdaptorsBase::Vector3r {
             const auto& free_pt = getWorldSimApi()->projectToCollisionFree(position.to(), mindist);
-            return RpcLibAdapatorsBase::Vector3r(free_pt);
+            return RpcLibAdaptorsBase::Vector3r(free_pt);
         });
 
-        pimpl_->server.bind("simCheckOccupancy", [&](const RpcLibAdapatorsBase::Vector3r& position) -> bool {
+        pimpl_->server.bind("simCheckOccupancy", [&](const RpcLibAdaptorsBase::Vector3r& position) -> bool {
             return getWorldSimApi()->isOccupied(position.to());
         });
 
-        pimpl_->server.bind("simGetSignedDistance", [&](const RpcLibAdapatorsBase::Vector3r& position) -> double {
+        pimpl_->server.bind("simGetSignedDistance", [&](const RpcLibAdaptorsBase::Vector3r& position) -> double {
             return getWorldSimApi()->getSignedDistance(position.to());
         });
 
-        pimpl_->server.bind("simGetSDFGradient", [&](const RpcLibAdapatorsBase::Vector3r& position) -> RpcLibAdapatorsBase::Vector3r {
+        pimpl_->server.bind("simGetSDFGradient", [&](const RpcLibAdaptorsBase::Vector3r& position) -> RpcLibAdaptorsBase::Vector3r {
             return getWorldSimApi()->getSDFGradient(position.to());
         });
 

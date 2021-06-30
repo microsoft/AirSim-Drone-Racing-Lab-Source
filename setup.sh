@@ -170,12 +170,17 @@ echo "Installing Eigen library..."
 
 if [ ! -d "AirLib/deps/eigen3" ]; then
     echo "Downloading Eigen..."
-    wget -O eigen3.zip https://gitlab.com/libeigen/eigen/-/archive/3.3.7/eigen-3.3.7.zip
-    unzip -q eigen3.zip -d temp_eigen
+    
+    # sdf changes:
+    # wget -O eigen3.zip https://gitlab.com/libeigen/eigen/-/archive/3.3.7/eigen-3.3.7.zip
+    # unzip -q eigen3.zip -d temp_eigen
     mkdir -p AirLib/deps/eigen3
-    mv temp_eigen/eigen*/Eigen AirLib/deps/eigen3
-    rm -rf temp_eigen
-    rm eigen3.zip
+    # mv temp_eigen/eigen*/Eigen AirLib/deps/eigen3
+    # rm -rf temp_eigen
+    # rm eigen3.zip
+
+    cp -R eigen3/Eigen AirLib/deps/eigen3/Eigen
+    cp -R eigen3/unsupported AirLib/deps/eigen3/unsupported
 else
     echo "Eigen is already installed."
 fi

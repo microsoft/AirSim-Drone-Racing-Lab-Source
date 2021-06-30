@@ -484,23 +484,23 @@ __pragma(warning(disable : 4239))
         // SDF APIs
         bool RpcLibClientBase::simBuildSDF(const msr::airlib::Vector3r& position, const double& x, const double& y, const double& z, const float& res)
         {
-            return pimpl_->client.call("simBuildSDF", RpcLibAdapatorsBase::Vector3r(position), x, y, z, res).as<bool>();
+            return pimpl_->client.call("simBuildSDF", RpcLibAdaptorsBase::Vector3r(position), x, y, z, res).as<bool>();
         }
         msr::airlib::Vector3r RpcLibClientBase::simProjectToFreeSpace(const msr::airlib::Vector3r& position, const double& mindist)
         {
-            return pimpl_->client.call("simProjectToFreeSpace", RpcLibAdapatorsBase::Vector3r(position), mindist).as<RpcLibAdapatorsBase::Vector3r>().to();
+            return pimpl_->client.call("simProjectToFreeSpace", RpcLibAdaptorsBase::Vector3r(position), mindist).as<RpcLibAdaptorsBase::Vector3r>().to();
         }
         bool RpcLibClientBase::simCheckOccupancy(const msr::airlib::Vector3r& position)
         {
-            return pimpl_->client.call("simCheckOccupancy", RpcLibAdapatorsBase::Vector3r(position)).as<bool>();
+            return pimpl_->client.call("simCheckOccupancy", RpcLibAdaptorsBase::Vector3r(position)).as<bool>();
         }
         double RpcLibClientBase::simGetSignedDistance(const msr::airlib::Vector3r& position)
         {
-            return pimpl_->client.call("simGetSignedDistance", RpcLibAdapatorsBase::Vector3r(position)).as<double>();
+            return pimpl_->client.call("simGetSignedDistance", RpcLibAdaptorsBase::Vector3r(position)).as<double>();
         }
         msr::airlib::Vector3r RpcLibClientBase::simGetSDFGradient(const msr::airlib::Vector3r& position)
         {
-            return pimpl_->client.call("simGetSDFGradient", RpcLibAdapatorsBase::Vector3r(position)).as<RpcLibAdapatorsBase::Vector3r>().to();
+            return pimpl_->client.call("simGetSDFGradient", RpcLibAdaptorsBase::Vector3r(position)).as<RpcLibAdaptorsBase::Vector3r>().to();
         }
         bool RpcLibClientBase::simSaveSDF(const std::string& filepath)
         {
