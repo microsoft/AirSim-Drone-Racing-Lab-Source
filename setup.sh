@@ -48,8 +48,7 @@ else #linux
         wget -O - http://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
         sudo apt-get update
     fi
-    # sudo apt-get install -y clang-8 clang++-8 libc++-8-dev libc++abi-8-dev
-    sudo apt-get install -y clang-9 clang++-9 libc++-9-dev libc++abi-9-dev
+    sudo apt-get install -y clang-8 clang++-8 libc++-8-dev libc++abi-8-dev
 fi
 
 if ! which cmake; then

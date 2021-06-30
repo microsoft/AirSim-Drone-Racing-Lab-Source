@@ -41,8 +41,8 @@ if [ "$(uname)" == "Darwin" ]; then
     export CC=/usr/local/opt/llvm@8/bin/clang
     export CXX=/usr/local/opt/llvm@8/bin/clang++
 else
-    export CC="clang-9"
-    export CXX="clang++-9"
+    export CC="clang-8"
+    export CXX="clang++-8"
 fi
 # install moveOnSpline components
 if [ ! -d "./external/gflags_airsim" ]; then 
@@ -111,8 +111,8 @@ if [ "$(uname)" == "Darwin" ]; then
     export CC=/usr/local/opt/llvm@8/bin/clang
     export CXX=/usr/local/opt/llvm@8/bin/clang++
 else
-    export CC="clang-9"
-    export CXX="clang++-9"
+    export CC="clang-8"
+    export CXX="clang++-8"
 fi
 
 #install EIGEN library
@@ -159,15 +159,15 @@ popd >/dev/null
 
 mkdir -p AirLib/lib/x64/$folder_name
 mkdir -p AirLib/deps/rpclib/lib
-mkdir -p AirLib/deps/MavLinkCom/lib
+# mkdir -p AirLib/deps/MavLinkCom/lib
 cp $build_dir/output/lib/libAirLib.a AirLib/lib
-cp $build_dir/output/lib/libMavLinkCom.a AirLib/deps/MavLinkCom/lib
+# cp $build_dir/output/lib/libMavLinkCom.a AirLib/deps/MavLinkCom/lib
 cp $build_dir/output/lib/librpc.a AirLib/deps/rpclib/lib/librpc.a
 
 # Update AirLib/lib, AirLib/deps, Plugins folders with new binaries
 rsync -a --delete $build_dir/output/lib/ AirLib/lib/x64/$folder_name
 rsync -a --delete external/rpclib/$RPC_VERSION_FOLDER/include AirLib/deps/rpclib
-rsync -a --delete MavLinkCom/include AirLib/deps/MavLinkCom
+# rsync -a --delete MavLinkCom/include AirLib/deps/MavLinkCom
 rsync -a --delete AirLib Unreal/Plugins/AirSim/Source
 rm -rf Unreal/Plugins/AirSim/Source/AirLib/src
 
