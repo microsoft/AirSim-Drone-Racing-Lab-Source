@@ -418,13 +418,13 @@ namespace airlib
             return getWorldSimApi()->getSDFGradient(position.to());
         });
 
-        pimpl_->server.bind("simGetSignedDistances", [&](const std::vector<RpcLibAdapatorsBase::Vector3r>& positions) -> std::vector<double> {
+        pimpl_->server.bind("simGetSignedDistances", [&](const std::vector<RpcLibAdaptorsBase::Vector3r>& positions) -> std::vector<double> {
             vector<Vector3r> conv_positions;
-            RpcLibAdapatorsBase::to(positions, conv_positions);
+            RpcLibAdaptorsBase::to(positions, conv_positions);
             return getWorldSimApi()->getSignedDistances(conv_positions);
         });
 
-        pimpl_->server.bind("simGetSDFGradient", [&](const RpcLibAdapatorsBase::Vector3r& position) -> RpcLibAdapatorsBase::Vector3r {
+        pimpl_->server.bind("simGetSDFGradient", [&](const RpcLibAdaptorsBase::Vector3r& position) -> RpcLibAdaptorsBase::Vector3r {
             return getWorldSimApi()->getSDFGradient(position.to());
 
         pimpl_->server.bind("simLoadSDF", [&](const std::string& filepath) -> bool {
