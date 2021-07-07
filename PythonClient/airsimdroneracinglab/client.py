@@ -2220,3 +2220,32 @@ class MultirotorClient(VehicleClient, object):
         """
         return self.client.call("simGetLastGatePassed", vehicle_name)
 
+    def simSpawnObject(
+        self, object_name, asset_name, pose, scale, physics_enabled=False
+    ):
+        """Spawned selected object in the world
+        
+        Args:
+            object_name (str): Desired name of new object
+            asset_name (str): Name of asset(mesh) in the project database
+            pose (airsim.Pose): Desired pose of object
+            scale (airsim.Vector3r): Desired scale of object
+        
+        Returns:
+            str: Name of spawned object, in case it had to be modified
+        """
+        return self.client.call(
+            "simSpawnObject", object_name, asset_name, pose, scale, physics_enabled
+        )
+
+    def simDestroyObject(self, object_name):
+        """Removes selected object from the world
+        
+        Args:
+            object_name (str): Name of object to be removed
+        
+        Returns:
+            bool: True if object is queued up for removal
+        """
+        return self.client.call("simDestroyObject", object_name)
+
