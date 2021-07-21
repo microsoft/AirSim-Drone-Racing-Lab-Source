@@ -6,11 +6,14 @@
 #include "Weather/WeatherLib.h"
 #include "DrawDebugHelpers.h"
 #include "Runtime/Engine/Classes/Engine/Engine.h"
+#include "ImageUtils.h"
 #include <cstdlib>
 #include <ctime>
 
+
 WorldSimApi::WorldSimApi(ASimModeBase* simmode)
-    : simmode_(simmode) {}
+    : simmode_(simmode) {
+}
 
 bool WorldSimApi::loadLevel(const std::string& level_name)
 {
@@ -152,6 +155,82 @@ AActor* WorldSimApi::createNewActor(const FActorSpawnParameters& spawn_params, c
     }
     return NewActor;
 }
+
+bool WorldSimApi::setMeshMaterialFromTexture(const std::string& object_name, const std::string& texture_path)
+{
+    bool success = false;
+    UAirBlueprintLib::RunCommandOnGameThread([this, &object_name, &texture_path, &success]() {
+        UTexture2D* texture_desired = FImageUtils::ImportFileAsTexture2D(FString(texture_path.c_str()));
+
+        AActor* actor = UAirBlueprintLib::FindActor<AActor>(simmode_, FString(object_name.c_str()));
+        
+        if (simmode_->domain_rand_material_ != nullptr && actor != nullptr) {
+            TArray<UStaticMeshComponent*> c;
+            actor->GetComponents<UStaticMeshComponent>(c);
+            if (simmode_->domain_rand_material_ == nullptr) {
+                UAirBlueprintLib::LogMessageString("Cannot find material for domain randomization",
+                                                   "",
+                                                   LogDebugLevel::Failure);
+            }
+
+            for (UStaticMeshComponent* staticMeshComponent : c) {
+                UMaterialInstanceDynamic* dynamic_material = UMaterialInstanceDynamic::Create(simmode_->domain_rand_material_, staticMeshComponent);
+                dynamic_material->SetTextureParameterValue("TextureParameter", texture_desired);
+                staticMeshComponent->SetMaterial(0, dynamic_material);
+            }
+        }
+
+        else {        
+            if (actor == nullptr) {
+                    UAirBlueprintLib::LogMessageString("Cannot find specified actor for domain randomization",
+                                                       "",
+                                                       LogDebugLevel::Failure);
+            }
+            if (simmode_->domain_rand_material_ == nullptr) {
+                UAirBlueprintLib::LogMessageString("Cannot find material for domain randomization",
+                                                   "",
+                                                   LogDebugLevel::Failure);
+            }
+        }
+    },true);
+
+    success = true;
+    return success;
+}
+
+bool WorldSimApi::setMeshMaterial(const std::string& object_name, const std::string& material_name)
+{
+    bool success = false;
+    UAirBlueprintLib::RunCommandOnGameThread([this, &object_name, &material_name, &success]() {
+        AActor* actor = UAirBlueprintLib::FindActor<AActor>(simmode_, FString(object_name.c_str()));
+        UMaterial* material = (UMaterial*)StaticLoadObject(UMaterial::StaticClass(), nullptr, *FString(material_name.c_str()));
+        
+        if (material != nullptr && actor != nullptr) {
+            TArray<UStaticMeshComponent*> c;
+            actor->GetComponents<UStaticMeshComponent>(c);
+
+            for (UStaticMeshComponent* staticMeshComponent : c) {
+                staticMeshComponent->SetMaterial(0, material);
+            }
+        }
+        else {
+            if (material == nullptr) {
+                UAirBlueprintLib::LogMessageString("Cannot find material for domain randomization",
+                                                   "",
+                                                   LogDebugLevel::Failure);
+            }
+            if (actor == nullptr) {
+                UAirBlueprintLib::LogMessageString("Cannot find specified actor for domain randomization",
+                                                   "",
+                                                   LogDebugLevel::Failure);
+            }
+        }
+    }, true);
+
+    success = true;
+    return success;
+}
+
 
 bool WorldSimApi::createVoxelGrid(const Vector3r& position, const double& x_size, const double& y_size, const double& z_size, const float& res, const std::string& output_file)
 {

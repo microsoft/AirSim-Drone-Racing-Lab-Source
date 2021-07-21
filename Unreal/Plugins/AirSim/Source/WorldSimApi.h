@@ -57,6 +57,8 @@ public:
     virtual Vector3r getObjectScaleInternal(const std::string& object_name) const override;
     virtual bool setObjectScale(const std::string& object_name, const Vector3r& scale) override;
     virtual bool setTextureFromUrl(std::string& object_name, std::string& url) override;
+    virtual bool setMeshMaterial(const std::string& object_name, const std::string& material_name) override;
+    virtual bool setMeshMaterialFromTexture(const std::string& object_name, const std::string& texture_path) override;
 
     //----------- Plotting APIs ----------/
     virtual void simFlushPersistentMarkers() override;
@@ -105,6 +107,7 @@ private:
 private:
     ASimModeBase* simmode_;
     ULevelStreamingDynamic* current_level_;
+    UMaterial* domain_rand_material_;
 
     VoxelGrid::VoxelGrid<uint8_t> voxel_grid_temp;
     std::vector<bool> voxel_grid_;
