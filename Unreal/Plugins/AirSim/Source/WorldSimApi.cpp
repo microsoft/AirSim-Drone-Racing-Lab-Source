@@ -153,7 +153,7 @@ AActor* WorldSimApi::createNewActor(const FActorSpawnParameters& spawn_params, c
     return NewActor;
 }
 
-bool WorldSimApi::createVoxelGrid(const Vector3r& position, const int& x_size, const int& y_size, const int& z_size, const float& res, const std::string& output_file)
+bool WorldSimApi::createVoxelGrid(const Vector3r& position, const double& x_size, const double& y_size, const double& z_size, const float& res, const std::string& output_file)
 {
     bool success = false;
     int ncells_x = x_size / res;

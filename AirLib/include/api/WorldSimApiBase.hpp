@@ -74,7 +74,7 @@ namespace airlib
         virtual std::unique_ptr<std::vector<std::string>> swapTextures(const std::string& tag, int tex_id = 0, int component_id = 0, int material_id = 0) = 0;
         virtual vector<MeshPositionVertexBuffersResponse> getMeshPositionVertexBuffers() const = 0;
 
-        virtual bool createVoxelGrid(const Vector3r& position, const int& x_size, const int& y_size, const int& z_size, const float& res, const std::string& output_file) = 0;
+        virtual bool createVoxelGrid(const Vector3r& position, const double& x_size, const double& y_size, const double& z_size, const float& res, const std::string& output_file) = 0;
 
         // SDF APIs
         virtual bool buildSDF(const Vector3r& position, const double& x_size, const double& y_size, const double& z_size, const float& res) = 0;

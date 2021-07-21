@@ -70,7 +70,7 @@ public:
     virtual std::vector<MeshPositionVertexBuffersResponse> getMeshPositionVertexBuffers() const override;
 
     // Voxel grid/SDF API
-    virtual bool createVoxelGrid(const Vector3r& position, const int& x_size, const int& y_size, const int& z_size, const float& res, const std::string& output_file) override;
+    virtual bool createVoxelGrid(const Vector3r& position, const double& x_size, const double& y_size, const double& z_size, const float& res, const std::string& output_file) override;
     virtual bool buildSDF(const Vector3r& position, const double& x_size, const double& y_size, const double& z_size, const float& res) override;
     virtual Vector3r projectToCollisionFree(const Vector3r& position, const double& mindist) override;
     virtual double getSignedDistance(const Vector3r& position) override;

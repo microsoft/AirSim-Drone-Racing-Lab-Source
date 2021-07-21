@@ -251,15 +251,15 @@ IF NOT EXIST build_debug (
 REM //---------- now we have all dependencies to compile AirSim.sln which will also compile MavLinkCom ----------
 cd build_debug
 if "%buildMode%" == "--Debug" (
-msbuild -maxcpucount:12 /p:Platform=x64 /p:Configuration=Debug AirSim.sln
+msbuild /maxcpucount:12 /p:Platform=x64 /p:Configuration=Debug AirSim.sln
 if ERRORLEVEL 1 goto :buildfailed
 ) else if "%buildMode%" == "--Release" (
-msbuild -maxcpucount:12 /p:Platform=x64 /p:Configuration=Release AirSim.sln
+msbuild /maxcpucount:12 /p:Platform=x64 /p:Configuration=Release AirSim.sln
 if ERRORLEVEL 1 goto :buildfailed
 ) else (
-msbuild -maxcpucount:12 /p:Platform=x64 /p:Configuration=Debug AirSim.sln
+msbuild /maxcpucount:12 /p:Platform=x64 /p:Configuration=Debug AirSim.sln
 if ERRORLEVEL 1 goto :buildfailed
-msbuild -maxcpucount:12 /p:Platform=x64 /p:Configuration=Release AirSim.sln 
+msbuild /maxcpucount:12 /p:Platform=x64 /p:Configuration=Release AirSim.sln 
 if ERRORLEVEL 1 goto :buildfailed
 )
 cd ..
