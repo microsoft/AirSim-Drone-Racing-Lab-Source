@@ -107,7 +107,6 @@ private:
 private:
     ASimModeBase* simmode_;
     ULevelStreamingDynamic* current_level_;
-    UMaterial* domain_rand_material_;
 
     VoxelGrid::VoxelGrid<uint8_t> voxel_grid_temp;
     std::vector<bool> voxel_grid_;
