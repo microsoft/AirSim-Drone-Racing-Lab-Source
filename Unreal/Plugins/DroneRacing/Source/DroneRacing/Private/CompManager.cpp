@@ -97,10 +97,12 @@ void ACompManager::EndComp()
 {
 	is_logging_ = false;
 	LOGGER->close();
-	// Remove hud from viewport
-	race_hud_->RemoveFromViewport();
-	//destroy HUD
-	race_hud_->Destruct();
+    if (race_hud_ != nullptr) {
+
+        race_hud_->RemoveFromViewport();
+        //destroy HUD
+        race_hud_->Destruct();
+    }
 }
 
 const std::string ACompManager::whereAmI() const
