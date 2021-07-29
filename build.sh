@@ -55,6 +55,7 @@ else
     # install gflags
     echo "installing gflags"
     cd external/gflags_airsim; 
+    git checkout linux-autobuild;
     mkdir -p build; cd build;
     cmake ..; make;
     mkdir -p ${deps_dir}/gflagslib/lib;
@@ -70,6 +71,7 @@ else
     # install glog
     echo "installing glog"
     cd external/glog_airsim;
+    git checkout linux-autobuild;
     mkdir -p build; cd build;
     cmake ..; make;
     mkdir -p ${deps_dir}/gloglib/lib; mkdir -p ${deps_dir}/gloglib/include;
@@ -85,6 +87,7 @@ else
     # install nlopt
     echo "installing nlopt"
     cd external/nlopt_airsim; 
+    git checkout linux-autobuild;
     mkdir -p build; cd build;
     cmake ..; make;
     mkdir -p ${deps_dir}/nloptlib/lib;
