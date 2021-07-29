@@ -8,6 +8,7 @@ stages:
   - stage: AirSimCI
     jobs:
       - job: Ubuntu_1804
+        timeoutInMinutes: 360 # how long to run the job before automatically cancelling
         pool:
           name: "AirSim"
           demands:
@@ -79,6 +80,7 @@ stages:
               replaceExistingArchive: true
 
       - job: Windows_VS2019
+        timeoutInMinutes: 360 # how long to run the job before automatically cancelling
         pool:
           name: "AirSim"
           demands:
