@@ -9,7 +9,7 @@ stages:
     jobs:
       - job: Ubuntu_1804
         pool:
-          name: 'AirSim'
+          name: "AirSim"
           demands:
             - Spec -equals Ubuntu_18.04
         container:
@@ -44,7 +44,7 @@ stages:
               ./build.sh
             displayName: Build AirLib
 
-           # Build ADRL
+            # Build ADRL
           - script: |
               $(UE4_ROOT)/Engine/Build/BatchFiles/Linux/Build.sh ADRL Linux Development \
                 -project=$(pwd)/Unreal/ADRL.uproject
@@ -57,64 +57,30 @@ stages:
               $(UE4_ROOT)/Engine/Build/BatchFiles/RunUAT.sh BuildCookRun \
                 -project="$(pwd)/Unreal/ADRL.uproject" \
                 -nop4 -nocompile -build -cook -compressed -pak -allmaps -stage \
-                -archive -archivedirectory="$(pwd)/Unreal/ADRL/Packaged/Development" \
+                -archive -archivedirectory="$(pwd)/Unreal/Packaged/Development" \
                 -clientconfig=Development -clean -utf8output
             displayName: Package ADRL - Development
 
           # Publish Artifact for ADRL Linux
           - task: PublishPipelineArtifact@1
             inputs:
-              targetPath: 'Unreal/ADRL/Packaged'
-              artifactName: 'ADRL_Linux'
+              targetPath: "Unreal/Packaged"
+              artifactName: "ADRL_Linux"
             displayName: Artifact for ADRL Linux
             condition: succeededOrFailed()
 
           - task: ArchiveFiles@2
             displayName: ADRL Linux Zip
             inputs:
-              rootFolderOrFile: 'Unreal/ADRL/Packaged'
+              rootFolderOrFile: "Unreal/Packaged"
               includeRootFolder: false
-              archiveType: 'zip'
-              archiveFile: 'Unreal/ADRL/Packaged/ADRL_Linux.zip'
-              replaceExistingArchive: true
-
-          # Build Blocks
-          - script: |
-              $(UE4_ROOT)/Engine/Build/BatchFiles/Linux/Build.sh Blocks Linux Development \
-                -project=$(pwd)/Unreal/Environments/Blocks/Blocks.uproject
-              $(UE4_ROOT)/Engine/Build/BatchFiles/Linux/Build.sh BlocksEditor Linux Development \
-                -project=$(pwd)/Unreal/Environments/Blocks/Blocks.uproject
-            displayName: Build Blocks - Development
-     
-          # Package Blocks
-          - script: |
-              $(UE4_ROOT)/Engine/Build/BatchFiles/RunUAT.sh BuildCookRun \
-                -project="$(pwd)/Unreal/Environments/Blocks/Blocks.uproject" \
-                -nop4 -nocompile -build -cook -compressed -pak -allmaps -stage \
-                -archive -archivedirectory="$(pwd)/Unreal/Environments/Blocks/Packaged/Development" \
-                -clientconfig=Development -clean -utf8output
-            displayName: Package Blocks - Development
-            
-          # Publish Artifact for Blocks Linux
-          - task: PublishPipelineArtifact@1
-            inputs:
-              targetPath: 'Unreal/Environments/Blocks/Packaged'
-              artifactName: 'Blocks_Linux'
-            displayName: Artifact for Blocks Linux
-            condition: succeededOrFailed()
-
-          - task: ArchiveFiles@2
-            displayName: Blocks Linux Zip
-            inputs:
-              rootFolderOrFile: 'Unreal/Environments/Blocks/Packaged'
-              includeRootFolder: false
-              archiveType: 'zip'
-              archiveFile: 'Unreal/Environments/Blocks/Packaged/Blocks_Linux.zip'
+              archiveType: "zip"
+              archiveFile: "Unreal/Packaged/ADRL_Linux.zip"
               replaceExistingArchive: true
 
       - job: Windows_VS2019
         pool:
-          name: 'AirSim'
+          name: "AirSim"
           demands:
             - Spec -equals WinServer2019_VS2019_Datacenter
         container:
@@ -140,7 +106,6 @@ stages:
               cd ../
             displayName: Checkout submodules windows branch
 
-
           # Build AirLib
           - script: |
               call "C:\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
@@ -153,30 +118,25 @@ stages:
               call "%UE4_ROOT%\Engine\Build\BatchFiles\Build.bat" ADRLEditor Win64 Development -project="%CD%\Unreal\ADRL.uproject"
             displayName: Build ADRL - Development
 
-          # Build Blocks
+          # Package ADRL
           - script: |
-              call "%UE4_ROOT%\Engine\Build\BatchFiles\Build.bat" Blocks Win64 Development -project="%CD%\Unreal\Environments\Blocks\Blocks.uproject"
-              call "%UE4_ROOT%\Engine\Build\BatchFiles\Build.bat" BlocksEditor Win64 Development -project="%CD%\Unreal\Environments\Blocks\Blocks.uproject"
-            displayName: Build Blocks - Development
+              call "%UE4_ROOT%\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun -project="%CD%\Unreal\ADRL.uproject" -nop4 -nocompile -build -cook -compressed -pak -allmaps -stage -archive -archivedirectory="%CD%\Unreal\Packaged\Development" -clientconfig=Development -clean -utf8output
+            # call "%UE4_ROOT%\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun -project="%CD%\Unreal\ADRL.uproject" -nocompileeditor -installed -nop4 -cook -stage -archive -archivedirectory="%CD%\Unreal\Packaged\Development" -package -ddc=InstalledDerivedDataBackendGraph -pak -prereqs -nodebuginfo -targetplatform=Win64 -build -target=ADRL -clientconfig=Development -utf8output
+            displayName: Package ADRL - Development
 
-          # Package Blocks
-          - script: |
-              call "%UE4_ROOT%\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun -project="%CD%\Unreal\Environments\Blocks\Blocks.uproject" -nop4 -nocompile -build -cook -compressed -pak -allmaps -stage -archive -archivedirectory="%CD%\Unreal\Environments\Blocks\Packaged\Development" -clientconfig=Development -clean -utf8output
-            displayName: Package Blocks - Development
-
-          # Publish Artifact for Blocks Windows
+          # Publish Artifact for ADRL Windows
           - task: PublishPipelineArtifact@1
             inputs:
-              targetPath: 'Unreal/Environments/Blocks/Packaged'
-              artifactName: 'Blocks_Windows'
-            displayName: Artifact for Blocks Windows
+              targetPath: "Unreal/Packaged"
+              artifactName: "ADRL_Windows"
+            displayName: Artifact for ADRL Windows
             condition: succeededOrFailed()
 
           - task: ArchiveFiles@2
-            displayName: Blocks Windows Zip
+            displayName: ADRL Windows Zip
             inputs:
-              rootFolderOrFile: 'Unreal/Environments/Blocks/Packaged'
+              rootFolderOrFile: "Unreal/Packaged"
               includeRootFolder: false
-              archiveType: 'zip'
-              archiveFile: 'Unreal/Environments/Blocks/Packaged/Blocks_Windows.zip'
+              archiveType: "zip"
+              archiveFile: "Unreal/Packaged/ADRL_Windows.zip"
               replaceExistingArchive: true
