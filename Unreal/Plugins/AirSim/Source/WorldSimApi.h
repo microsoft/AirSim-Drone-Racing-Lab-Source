@@ -50,7 +50,7 @@ public:
 
     virtual std::unique_ptr<std::vector<std::string>> swapTextures(const std::string& tag, int tex_id = 0, int component_id = 0, int material_id = 0) override;
     virtual std::vector<std::string> listSceneObjects(const std::string& name_regex) const override;
-    virtual Pose getObjectPose(const std::string& object_name, bool add_noise=true) const override;
+    virtual Pose getObjectPose(const std::string& object_name, bool add_noise = true) const override;
     virtual bool setObjectPose(const std::string& object_name, const Pose& pose, bool teleport) override;
     virtual bool runConsoleCommand(const std::string& command) override;
     virtual Vector3r getObjectScale(const std::string& object_name) const override;
@@ -78,17 +78,18 @@ public:
     virtual double getSignedDistance(const Vector3r& position) override;
     virtual std::vector<double> getSignedDistances(const std::vector<Vector3r>& positions) override;
     virtual Vector3r getSDFGradient(const Vector3r& position) override;
+    virtual bool checkInVolume(const Vector3r& position, const std::string& volume_object_name) override;
     virtual bool isOccupied(const Vector3r& position) override;
     virtual bool saveSDF(const std::string& filepath) override;
     virtual bool loadSDF(const std::string& filepath) override;
 
-	// Race API
-	virtual void disableRaceLogging() override;
-	virtual void startRace(const int race_tier) override;
-	virtual void startBenchmarkRace(const int race_tier) override;
-	virtual void resetRace() override;
-	virtual bool getDisqualified(const std::string& racer_name) override;
-	virtual int getLastGatePassed(const std::string& racer_name) override;
+    // Race API
+    virtual void disableRaceLogging() override;
+    virtual void startRace(const int race_tier) override;
+    virtual void startBenchmarkRace(const int race_tier) override;
+    virtual void resetRace() override;
+    virtual bool getDisqualified(const std::string& racer_name) override;
+    virtual int getLastGatePassed(const std::string& racer_name) override;
 
     // Recording APIs
     virtual void startRecording() override;
@@ -102,7 +103,7 @@ public:
 private:
     AActor* createNewActor(const FActorSpawnParameters& spawn_params, const FTransform& actor_transform, const Vector3r& scale, UStaticMesh* static_mesh);
     void spawnPlayer();
-    Pose generateNoise(float position_magnitude=3.0, float orientation_magnitude=0.01);
+    Pose generateNoise(float position_magnitude = 3.0, float orientation_magnitude = 0.01);
 
 private:
     ASimModeBase* simmode_;
@@ -112,6 +113,6 @@ private:
     std::vector<bool> voxel_grid_;
     sdf_tools::SignedDistanceField sdf_;
 
-	// Race API
-	std::map<FString, Pose> gate_noise_map_;
+    // Race API
+    std::map<FString, Pose> gate_noise_map_;
 };

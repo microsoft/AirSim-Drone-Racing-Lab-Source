@@ -10,9 +10,9 @@
 #include <cstdlib>
 #include <ctime>
 
-
 WorldSimApi::WorldSimApi(ASimModeBase* simmode)
-    : simmode_(simmode) {
+    : simmode_(simmode)
+{
 }
 
 bool WorldSimApi::loadLevel(const std::string& level_name)
@@ -24,7 +24,7 @@ bool WorldSimApi::loadLevel(const std::string& level_name)
     simmode_->toggleLoadingScreen(true);
     std::this_thread::sleep_for(0.1s);
 
-    UAirBlueprintLib::RunCommandOnGameThread([this, level_name]() {        
+    UAirBlueprintLib::RunCommandOnGameThread([this, level_name]() {
         this->current_level_ = UAirBlueprintLib::loadLevel(this->simmode_->GetWorld(), FString(level_name.c_str()));
     },
                                              true);
@@ -163,7 +163,7 @@ bool WorldSimApi::setMeshMaterialFromTexture(const std::string& object_name, con
         UTexture2D* texture_desired = FImageUtils::ImportFileAsTexture2D(FString(texture_path.c_str()));
 
         AActor* actor = UAirBlueprintLib::FindActor<AActor>(simmode_, FString(object_name.c_str()));
-        
+
         if (simmode_->domain_rand_material_ != nullptr && actor != nullptr) {
             TArray<UStaticMeshComponent*> c;
             actor->GetComponents<UStaticMeshComponent>(c);
@@ -180,11 +180,11 @@ bool WorldSimApi::setMeshMaterialFromTexture(const std::string& object_name, con
             }
         }
 
-        else {        
+        else {
             if (actor == nullptr) {
-                    UAirBlueprintLib::LogMessageString("Cannot find specified actor for domain randomization",
-                                                       "",
-                                                       LogDebugLevel::Failure);
+                UAirBlueprintLib::LogMessageString("Cannot find specified actor for domain randomization",
+                                                   "",
+                                                   LogDebugLevel::Failure);
             }
             if (simmode_->domain_rand_material_ == nullptr) {
                 UAirBlueprintLib::LogMessageString("Cannot find material for domain randomization",
@@ -192,7 +192,8 @@ bool WorldSimApi::setMeshMaterialFromTexture(const std::string& object_name, con
                                                    LogDebugLevel::Failure);
             }
         }
-    },true);
+    },
+                                             true);
 
     success = true;
     return success;
@@ -204,7 +205,7 @@ bool WorldSimApi::setMeshMaterial(const std::string& object_name, const std::str
     UAirBlueprintLib::RunCommandOnGameThread([this, &object_name, &material_name, &success]() {
         AActor* actor = UAirBlueprintLib::FindActor<AActor>(simmode_, FString(object_name.c_str()));
         UMaterial* material = (UMaterial*)StaticLoadObject(UMaterial::StaticClass(), nullptr, *FString(material_name.c_str()));
-        
+
         if (material != nullptr && actor != nullptr) {
             TArray<UStaticMeshComponent*> c;
             actor->GetComponents<UStaticMeshComponent>(c);
@@ -225,12 +226,12 @@ bool WorldSimApi::setMeshMaterial(const std::string& object_name, const std::str
                                                    LogDebugLevel::Failure);
             }
         }
-    }, true);
+    },
+                                             true);
 
     success = true;
     return success;
 }
-
 
 bool WorldSimApi::createVoxelGrid(const Vector3r& position, const double& x_size, const double& y_size, const double& z_size, const float& res, const std::string& output_file)
 {
@@ -317,8 +318,7 @@ bool WorldSimApi::buildSDF(const Vector3r& position, const double& x_size, const
 
     voxel_grid_temp = VoxelGrid::VoxelGrid<uint8_t>(origin_transform, res, x_size, y_size, z_size, 0);
 
-    std::function<bool(const VoxelGrid::GRID_INDEX&)> is_filled_fn = [&](const VoxelGrid::GRID_INDEX& index)
-    {
+    std::function<bool(const VoxelGrid::GRID_INDEX&)> is_filled_fn = [&](const VoxelGrid::GRID_INDEX& index) {
         // Convert SDF indices into a real-world location
         const Eigen::Vector4d location = voxel_grid_temp.GridIndexToLocation(index);
 
@@ -327,13 +327,11 @@ bool WorldSimApi::buildSDF(const Vector3r& position, const double& x_size, const
         FVector position_local = simmode_->getGlobalNedTransform().fromGlobalNed(grid_position + position);
         bool occupied = simmode_->GetWorld()->OverlapBlockingTestByChannel(position_local, FQuat::Identity, ECollisionChannel::ECC_Pawn, FCollisionShape::MakeBox(FVector(scale_cm / 2)), params);
 
-        if (occupied)
-        {
+        if (occupied) {
             // Mark as filled
             return true;
         }
-        else
-        {
+        else {
             // Mark as free space
             return false;
         }
@@ -346,13 +344,13 @@ bool WorldSimApi::buildSDF(const Vector3r& position, const double& x_size, const
 
 bool WorldSimApi::isOccupied(const Vector3r& position)
 {
-    std::pair <double, bool> dist = sdf_.EstimateDistance3d(position.cast<double>());
+    std::pair<double, bool> dist = sdf_.EstimateDistance3d(position.cast<double>());
     return (dist.first < 0.0);
 }
 
 double WorldSimApi::getSignedDistance(const Vector3r& position)
 {
-    std::pair <double, bool> dist = sdf_.EstimateDistance3d(position.cast<double>());
+    std::pair<double, bool> dist = sdf_.EstimateDistance3d(position.cast<double>());
     return dist.first;
 }
 
@@ -360,8 +358,8 @@ std::vector<double> WorldSimApi::getSignedDistances(const std::vector<Vector3r>&
 {
     std::vector<double> distances;
 
-    for (auto &position : positions) {
-        std::pair <double, bool> dist = sdf_.EstimateDistance3d(position.cast<double>());
+    for (auto& position : positions) {
+        std::pair<double, bool> dist = sdf_.EstimateDistance3d(position.cast<double>());
         distances.push_back(dist.first);
     }
     return distances;
@@ -369,7 +367,7 @@ std::vector<double> WorldSimApi::getSignedDistances(const std::vector<Vector3r>&
 
 Vector3r WorldSimApi::getSDFGradient(const Vector3r& position)
 {
-    std::vector <double> gradient = sdf_.GetAutoDiffGradient3d(position.cast<double>());
+    std::vector<double> gradient = sdf_.GetAutoDiffGradient3d(position.cast<double>());
     Eigen::Vector3d sdf_gradient;
 
     if (gradient.size() == 0) {
@@ -380,6 +378,19 @@ Vector3r WorldSimApi::getSDFGradient(const Vector3r& position)
     }
 
     return sdf_gradient.cast<float>();
+}
+
+bool WorldSimApi::checkInVolume(const Vector3r& position, const std::string& volume_actor_name)
+{
+    FCollisionQueryParams params;
+    params.bFindInitialOverlaps = true;
+    params.bIgnoreBlocks = true;
+    params.bTraceComplex = true;
+    params.TraceTag = "";
+    auto position_in_UE_frame = simmode_->getGlobalNedTransform().fromGlobalNed(position);
+    bool overlap = simmode_->GetWorld()->OverlapBlockingTestByChannel(position_in_UE_frame, FQuat::Identity, ECollisionChannel::ECC_Pawn, FCollisionShape::MakeBox(FVector(100)), params);
+
+    return overlap;
 }
 
 Vector3r WorldSimApi::projectToCollisionFree(const Vector3r& position, const double& mindist)
@@ -499,30 +510,30 @@ bool WorldSimApi::setTextureFromUrl(std::string& object_name, std::string& url)
         ATextureShuffleActor* actor = UAirBlueprintLib::FindActor<ATextureShuffleActor>(simmode_, FString(object_name.c_str()));
         if (actor != nullptr)
             actor->SetTextureFromUrl(FString(url.c_str()));
-    }, true);
+    },
+                                             true);
     return found;
 }
 
 WorldSimApi::Pose WorldSimApi::getObjectPose(const std::string& object_name, bool add_noise) const
 {
-    Pose result;  
+    Pose result;
     UAirBlueprintLib::RunCommandOnGameThread([this, &object_name, &result]() {
         AActor* actor = UAirBlueprintLib::FindActor<AActor>(simmode_, FString(object_name.c_str()));
         result = actor ? simmode_->getGlobalNedTransform().toGlobalNed(FTransform(actor->GetActorRotation(), actor->GetActorLocation()))
-            : Pose::nanPose();
-    }, true);
+                       : Pose::nanPose();
+    },
+                                             true);
 
     // give noisy pose always if level 2 or 3
-	std::regex compiledRegex(".*[Gg]ate.*", std::regex::optimize);
-	if ( add_noise && std::regex_match(object_name, compiledRegex) )
-	{
-		auto gate = gate_noise_map_.find(FString(object_name.c_str()));
-		if (gate != gate_noise_map_.end())
-		{
-			result.position += gate->second.position;
-			result.orientation = msr::airlib::VectorMath::coordOrientationAdd(gate->second.orientation, result.orientation);
-		}
-	}
+    std::regex compiledRegex(".*[Gg]ate.*", std::regex::optimize);
+    if (add_noise && std::regex_match(object_name, compiledRegex)) {
+        auto gate = gate_noise_map_.find(FString(object_name.c_str()));
+        if (gate != gate_noise_map_.end()) {
+            result.position += gate->second.position;
+            result.orientation = msr::airlib::VectorMath::coordOrientationAdd(gate->second.orientation, result.orientation);
+        }
+    }
 
     return result;
 }
@@ -542,13 +553,14 @@ Vector3r WorldSimApi::getObjectScale(const std::string& object_name) const
 
 WorldSimApi::Vector3r WorldSimApi::getObjectScaleInternal(const std::string& object_name) const
 {
-	Vector3r result;
-	UAirBlueprintLib::RunCommandOnGameThread([this, &object_name, &result]() {
-		AActor* actor = UAirBlueprintLib::FindActor<AActor>(simmode_, FString(object_name.c_str()));
-		result = actor ? Vector3r(actor->GetActorScale().X, actor->GetActorScale().Y, actor->GetActorScale().Z)
-			: Vector3r::Zero();
-	}, true);
-	return result;
+    Vector3r result;
+    UAirBlueprintLib::RunCommandOnGameThread([this, &object_name, &result]() {
+        AActor* actor = UAirBlueprintLib::FindActor<AActor>(simmode_, FString(object_name.c_str()));
+        result = actor ? Vector3r(actor->GetActorScale().X, actor->GetActorScale().Y, actor->GetActorScale().Z)
+                       : Vector3r::Zero();
+    },
+                                             true);
+    return result;
 }
 
 bool WorldSimApi::setObjectPose(const std::string& object_name, const WorldSimApi::Pose& pose, bool teleport)
@@ -844,103 +856,94 @@ std::string WorldSimApi::getSettingsString() const
 // Race API
 void WorldSimApi::disableRaceLogging()
 {
-	this->simmode_->RaceLoggingDisabled = true;
+    this->simmode_->RaceLoggingDisabled = true;
 }
 
 void WorldSimApi::startRace(const int race_tier)
 {
-	gate_noise_map_.clear();
-	std::srand(static_cast <unsigned> (std::time(0)));
+    gate_noise_map_.clear();
+    std::srand(static_cast<unsigned>(std::time(0)));
 
-	UAirBlueprintLib::RunCommandOnGameThread([this, race_tier]() {
+    UAirBlueprintLib::RunCommandOnGameThread([this, race_tier]() {
+        // Get all gates
+        TArray<AActor*> matching_actors;
+        UGameplayStatics::GetAllActorsWithTag(this->simmode_->GetWorld(), "race_gate", matching_actors);
+        for (auto actor : matching_actors) {
+            if (race_tier == 1) {
+                this->gate_noise_map_.insert(std::pair<FString, Pose>(actor->GetName(), Pose()));
+            }
+            else {
+                this->gate_noise_map_.insert(std::pair<FString, Pose>(actor->GetName(), generateNoise()));
+            }
+        }
 
-		// Get all gates
-		TArray<AActor*> matching_actors;
-		UGameplayStatics::GetAllActorsWithTag(this->simmode_->GetWorld(), "race_gate", matching_actors);
-		for (auto actor : matching_actors)
-		{
-			if (race_tier == 1)
-			{
-				this->gate_noise_map_.insert(std::pair<FString, Pose>(actor->GetName(), Pose()));
-			}
-			else
-			{
-				this->gate_noise_map_.insert(std::pair<FString, Pose>(actor->GetName(), generateNoise()));
-			}
-		}
-
-		this->simmode_->OnStartRace.Broadcast(race_tier);
-
-	}, true);
+        this->simmode_->OnStartRace.Broadcast(race_tier);
+    },
+                                             true);
 }
 
 void WorldSimApi::startBenchmarkRace(const int race_tier)
 {
-	int race_tier_internal = race_tier;
-	gate_noise_map_.clear();
-	std::srand(static_cast <unsigned> (std::time(0)));
+    int race_tier_internal = race_tier;
+    gate_noise_map_.clear();
+    std::srand(static_cast<unsigned>(std::time(0)));
 
-	UAirBlueprintLib::RunCommandOnGameThread([this, race_tier_internal]() {
+    UAirBlueprintLib::RunCommandOnGameThread([this, race_tier_internal]() {
+        // Get all gates
+        TArray<AActor*> matching_actors;
+        UGameplayStatics::GetAllActorsWithTag(this->simmode_->GetWorld(), "race_gate", matching_actors);
+        for (auto actor : matching_actors) {
+            if (race_tier_internal == 1) {
+                this->gate_noise_map_.insert(std::pair<FString, Pose>(actor->GetName(), Pose()));
+            }
+            else {
+                this->gate_noise_map_.insert(std::pair<FString, Pose>(actor->GetName(), generateNoise()));
+            }
+        }
 
-		// Get all gates
-		TArray<AActor*> matching_actors;
-		UGameplayStatics::GetAllActorsWithTag(this->simmode_->GetWorld(), "race_gate", matching_actors);
-		for (auto actor : matching_actors)
-		{
-			if (race_tier_internal == 1)
-			{
-				this->gate_noise_map_.insert(std::pair<FString, Pose>(actor->GetName(), Pose()));
-			}
-			else
-			{
-				this->gate_noise_map_.insert(std::pair<FString, Pose>(actor->GetName(), generateNoise()));
-			}
-		}
-
-		this->simmode_->OnStartRace.Broadcast(race_tier_internal);
-
-	}, true);
+        this->simmode_->OnStartRace.Broadcast(race_tier_internal);
+    },
+                                             true);
 }
 
 Pose WorldSimApi::generateNoise(float position_magnitude, float orientation_magnitude)
 {
-	// b/w low = -1 and high = +1
-	// low + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX / (high - low)));
+    // b/w low = -1 and high = +1
+    // low + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX / (high - low)));
     Vector3r position_noise(
-		-1 + static_cast <float> (std::rand()) / (static_cast <float> (RAND_MAX/ 2)),
-		-1 + static_cast <float> (std::rand()) / (static_cast <float> (RAND_MAX / 2)),
-		-1 + static_cast <float> (std::rand()) / (static_cast <float> (RAND_MAX / 2))
-	);
+        -1 + static_cast<float>(std::rand()) / (static_cast<float>(RAND_MAX / 2)),
+        -1 + static_cast<float>(std::rand()) / (static_cast<float>(RAND_MAX / 2)),
+        -1 + static_cast<float>(std::rand()) / (static_cast<float>(RAND_MAX / 2)));
 
-	// b/w 0 and +1
-	Eigen::Vector4f orientation_noise(
-		static_cast <float> (std::rand()) / static_cast <float> (RAND_MAX),
-		static_cast <float> (std::rand()) / static_cast <float> (RAND_MAX),
-		static_cast <float> (std::rand()) / static_cast <float> (RAND_MAX),
-		static_cast <float> (std::rand()) / static_cast <float> (RAND_MAX)
-	);
+    // b/w 0 and +1
+    Eigen::Vector4f orientation_noise(
+        static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX),
+        static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX),
+        static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX),
+        static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX));
 
-	position_noise.normalize();
-	orientation_noise.normalize();
-	orientation_noise *= orientation_magnitude;
-	return Pose(position_magnitude * position_noise, Quaternionr(orientation_noise[0], orientation_noise[1], orientation_noise[2], orientation_noise[3]));
+    position_noise.normalize();
+    orientation_noise.normalize();
+    orientation_noise *= orientation_magnitude;
+    return Pose(position_magnitude * position_noise, Quaternionr(orientation_noise[0], orientation_noise[1], orientation_noise[2], orientation_noise[3]));
 }
 
 void WorldSimApi::resetRace()
 {
-	UAirBlueprintLib::RunCommandOnGameThread([this]() {
-		this->simmode_->OnResetRace.Broadcast();
-	}, true);
+    UAirBlueprintLib::RunCommandOnGameThread([this]() {
+        this->simmode_->OnResetRace.Broadcast();
+    },
+                                             true);
 }
 
 bool WorldSimApi::getDisqualified(const std::string& racer_name)
 {
-	auto *prog = simmode_->RacerStates.Find(FString(racer_name.c_str()));
-	return prog != nullptr ? prog->Disqualified : false;
+    auto* prog = simmode_->RacerStates.Find(FString(racer_name.c_str()));
+    return prog != nullptr ? prog->Disqualified : false;
 }
 
 int WorldSimApi::getLastGatePassed(const std::string& racer_name)
 {
-	auto *prog = simmode_->RacerStates.Find(FString(racer_name.c_str()));
-	return prog != nullptr ? prog->LastGatePassed : -1;
+    auto* prog = simmode_->RacerStates.Find(FString(racer_name.c_str()));
+    return prog != nullptr ? prog->LastGatePassed : -1;
 }

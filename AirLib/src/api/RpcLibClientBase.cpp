@@ -518,6 +518,10 @@ __pragma(warning(disable : 4239))
         {
             return pimpl_->client.call("simGetSDFGradient", RpcLibAdaptorsBase::Vector3r(position)).as<RpcLibAdaptorsBase::Vector3r>().to();
         }
+        bool RpcLibClientBase::simCheckInVolume(const Vector3r& position, std::string& volume_object_name)
+        {
+            return pimpl_->client.call("simCheckInVolume", RpcLibAdaptorsBase::Vector3r(position), volume_object_name).as<bool>();
+        }
         bool RpcLibClientBase::simSaveSDF(const std::string& filepath)
         {
             return pimpl_->client.call("simSaveSDF", filepath).as<bool>();
@@ -588,7 +592,7 @@ __pragma(warning(disable : 4239))
         {
             return &pimpl_->client;
         }
-        
+
         //  ADRL:
         msr::airlib::Vector3r RpcLibClientBase::simGetObjectScaleInternal(const std::string& object_name) const
         {
@@ -599,7 +603,6 @@ __pragma(warning(disable : 4239))
         {
             pimpl_->client.call("simLogMultirotorState", is_enabled, vehicle_name);
         }
-
 
         // Race API
         void RpcLibClientBase::simStartRace(int tier)

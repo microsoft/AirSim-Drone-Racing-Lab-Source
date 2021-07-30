@@ -151,6 +151,7 @@ namespace airlib
         std::vector<double> simGetSignedDistances(const vector<Vector3r>& positions);
         Vector3r simGetSDFGradient(const Vector3r& position);
         bool simCheckOccupancy(const Vector3r& position);
+        bool simCheckInVolume(const Vector3r& position, std::string& volume_object_name);
         bool simLoadSDF(const std::string& filepath);
         bool simSaveSDF(const std::string& filepath);
 
@@ -164,7 +165,6 @@ namespace airlib
         bool simGetDisqualified(const std::string& racer_name);
         int simGetLastGatePassed(const std::string& racer_name);
         void simLogMultirotorState(bool is_enabled, const std::string& vehicle_name = "") const;
-
 
     protected:
         void* getClient();

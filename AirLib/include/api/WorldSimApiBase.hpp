@@ -66,7 +66,7 @@ namespace airlib
         virtual void simPlotTransformsWithNames(const vector<Pose>& poses, const vector<std::string>& names, float tf_scale, float tf_thickness, float text_scale, const vector<float>& text_color_rgba, float duration) = 0;
 
         virtual std::vector<std::string> listSceneObjects(const std::string& name_regex) const = 0;
-        virtual Pose getObjectPose(const std::string& object_name, bool add_noise=true) const = 0;
+        virtual Pose getObjectPose(const std::string& object_name, bool add_noise = true) const = 0;
         virtual Vector3r getObjectScale(const std::string& object_name) const = 0;
         virtual bool setObjectPose(const std::string& object_name, const Pose& pose, bool teleport) = 0;
         virtual bool runConsoleCommand(const std::string& command) = 0;
@@ -82,7 +82,8 @@ namespace airlib
         virtual double getSignedDistance(const Vector3r& position) = 0;
         virtual std::vector<double> getSignedDistances(const std::vector<Vector3r>& positions) = 0;
         virtual Vector3r getSDFGradient(const Vector3r& position) = 0;
-        virtual bool isOccupied(const Vector3r& position) = 0;    
+        virtual bool checkInVolume(const Vector3r& position, const std::string& volume_object_name) = 0;
+        virtual bool isOccupied(const Vector3r& position) = 0;
         virtual bool saveSDF(const std::string& filepath) = 0;
         virtual bool loadSDF(const std::string& filepath) = 0;
 
@@ -99,7 +100,7 @@ namespace airlib
         // Race API
         virtual Vector3r getObjectScaleInternal(const std::string& object_name) const = 0;
         virtual void disableRaceLogging() = 0;
-        virtual void startRace(const int tier=1) = 0;
+        virtual void startRace(const int tier = 1) = 0;
         virtual void startBenchmarkRace(const int tier = 1) = 0;
         virtual void resetRace() = 0;
         virtual bool getDisqualified(const std::string& racer_name) = 0;

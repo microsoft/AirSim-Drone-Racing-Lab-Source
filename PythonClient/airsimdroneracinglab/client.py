@@ -224,9 +224,7 @@ class VehicleClient:
         Returns:
             success[bool]: True if change succeeded
         """
-        return self.client.call(
-            "simSetMeshMaterial", object_name, material_name
-        )
+        return self.client.call("simSetMeshMaterial", object_name, material_name)
 
     def simSetMeshMaterialFromTexture(self, object_name, texture_path):
         """
@@ -240,7 +238,6 @@ class VehicleClient:
         return self.client.call(
             "simSetMeshMaterialFromTexture", object_name, texture_path
         )
-
 
     # time-of-day control
     def simSetTimeOfDay(
@@ -1079,6 +1076,16 @@ class VehicleClient:
             gradient (Vector3r): SDF gradient at the position
         """
         return self.client.call("simGetSDFGradient", position)
+
+    def simCheckInVolume(self, position, volume_object_name):
+        """
+        Check if a point is inside a volume. 
+
+        Args:
+            position (Vector3r): Global position at which volume is to be checked (m)
+            volume_object_name (str): Name of the volume object
+        """
+        return self.client.call("simCheckInVolume", position, volume_object_name)
 
     def simProjectToFreeSpace(self, position, mindist):
         """

@@ -319,7 +319,7 @@ namespace airlib
         });
 
         pimpl_->server.bind("simGetObjectPose", [&](const std::string& object_name, bool add_noise) -> RpcLibAdaptorsBase::Pose {
-            const auto& pose = getWorldSimApi()->getObjectPose(object_name, add_noise); 
+            const auto& pose = getWorldSimApi()->getObjectPose(object_name, add_noise);
             return RpcLibAdaptorsBase::Pose(pose);
         });
 
@@ -400,7 +400,7 @@ namespace airlib
         pimpl_->server.bind("simBuildSDF", [&](const RpcLibAdaptorsBase::Vector3r& position, const double& x, const double& y, const double& z, const float& res) -> bool {
             return getWorldSimApi()->buildSDF(position.to(), x, y, z, res);
         });
-        
+
         pimpl_->server.bind("simProjectToFreeSpace", [&](const RpcLibAdaptorsBase::Vector3r& position, const double& mindist) -> RpcLibAdaptorsBase::Vector3r {
             const auto& free_pt = getWorldSimApi()->projectToCollisionFree(position.to(), mindist);
             return RpcLibAdaptorsBase::Vector3r(free_pt);
@@ -424,6 +424,10 @@ namespace airlib
             return getWorldSimApi()->getSDFGradient(position.to());
         });
 
+        pimpl_->server.bind("simCheckInVolume", [&](const RpcLibAdaptorsBase::Vector3r& position, const std::string& volume_actor_name) -> bool {
+            return getWorldSimApi()->checkInVolume(position.to(), volume_actor_name);
+        });
+
         pimpl_->server.bind("simLoadSDF", [&](const std::string& filepath) -> bool {
             return getWorldSimApi()->loadSDF(filepath);
         });
@@ -431,7 +435,6 @@ namespace airlib
         pimpl_->server.bind("simSaveSDF", [&](const std::string& filepath) -> bool {
             return getWorldSimApi()->saveSDF(filepath);
         });
-        
 
         pimpl_->server.bind("cancelLastTask", [&](const std::string& vehicle_name) -> void {
             getVehicleApi(vehicle_name)->cancelLastTask();
@@ -483,8 +486,8 @@ namespace airlib
             getVehicleSimApi(vehicle_name)->setStateLogStatus(is_enabled);
         });
 
-        pimpl_->server.bind("simStartRace", [&](int tier) -> void { 
-            getWorldSimApi()->startRace(tier); 
+        pimpl_->server.bind("simStartRace", [&](int tier) -> void {
+            getWorldSimApi()->startRace(tier);
         });
         pimpl_->server.bind("simStartBenchmarkRace", [&](int tier) -> void {
             getWorldSimApi()->startBenchmarkRace(tier);
@@ -495,16 +498,15 @@ namespace airlib
         pimpl_->server.bind("simDisableRaceLog", [&]() -> void {
             getWorldSimApi()->disableRaceLogging();
         });
-        pimpl_->server.bind("simGetDisqualified", [&](const std::string &racer_name) -> bool {
+        pimpl_->server.bind("simGetDisqualified", [&](const std::string& racer_name) -> bool {
             return getWorldSimApi()->getDisqualified(racer_name);
         });
-        pimpl_->server.bind("simGetLastGatePassed", [&](const std::string &racer_name) -> int {
+        pimpl_->server.bind("simGetLastGatePassed", [&](const std::string& racer_name) -> int {
             return getWorldSimApi()->getLastGatePassed(racer_name);
         });
 
         //if we don't suppress then server will bomb out for exceptions raised by any method
         pimpl_->server.suppress_exceptions(true);
-
     }
 
     //required for pimpl
