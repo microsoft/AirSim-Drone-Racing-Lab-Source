@@ -12,12 +12,7 @@
 #include <sdf_utils/voxel_grid.hpp>
 #include <sdf_utils/pretty_print.hpp>
 
-// In Ubuntu 18.04,  UE 4.25 | clang8 can't find omp.h. so add full path manually
-#ifdef __linux__
-#include </usr/lib/llvm-10/lib/clang/10.0.0/include/omp.h>
-#else
 #include <omp.h>
-#endif
 
 namespace sdf_tools
 {

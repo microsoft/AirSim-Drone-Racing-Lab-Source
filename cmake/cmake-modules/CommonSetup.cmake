@@ -48,6 +48,7 @@ macro(CommonSetup)
             set(CMAKE_CXX_STANDARD 17)
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wstrict-aliasing -D__CLANG__")
         else ()
+            find_package(OpenMP REQUIRED)
             set(CMAKE_CXX_FLAGS "\
                 -std=c++17 -ggdb -Wall -Wextra \
                 -Wno-variadic-macros -Wno-parentheses -Wno-unused-function -Wno-unused \
@@ -55,7 +56,6 @@ macro(CommonSetup)
                 ${RPC_LIB_DEFINES} ${CMAKE_CXX_FLAGS}")
 
             if (${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
-                # set(CMAKE_CXX_FLAGS "-stdlib=libc++ -Wno-documentation -fopenmp=libiomp5 -Wno-unknown-warning-option ${CMAKE_CXX_FLAGS}")
                 set(CMAKE_CXX_FLAGS "-stdlib=libc++ -Wno-documentation -Wno-unknown-warning-option ${CMAKE_CXX_FLAGS}")
                 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
                 find_package(LLVM REQUIRED CONFIG)
