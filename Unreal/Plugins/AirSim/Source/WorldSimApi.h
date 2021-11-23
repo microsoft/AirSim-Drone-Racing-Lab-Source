@@ -57,8 +57,8 @@ public:
     virtual Vector3r getObjectScaleInternal(const std::string& object_name) const override;
     virtual bool setObjectScale(const std::string& object_name, const Vector3r& scale) override;
     virtual bool setTextureFromUrl(std::string& object_name, std::string& url) override;
-    virtual bool setMeshMaterial(const std::string& object_name, const std::string& material_name) override;
-    virtual bool setMeshMaterialFromTexture(const std::string& object_name, const std::string& texture_path) override;
+    virtual bool setObjectMaterial(const std::string& object_name, const std::string& material_name) override;
+    virtual bool setObjectMaterialFromTexture(const std::string& object_name, const std::string& texture_path) override;
 
     //----------- Plotting APIs ----------/
     virtual void simFlushPersistentMarkers() override;

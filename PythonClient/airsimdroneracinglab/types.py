@@ -54,29 +54,45 @@ class MsgpackMixin:
         return obj
 
 
-class ImageType:
+class _ImageType(type):
+    @property
+    def Scene(cls):
+        return 0
+    def DepthPlanar(cls):
+        return 1
+    def DepthPerspective(cls):
+        return 2
+    def DepthVis(cls):
+        return 3
+    def DisparityNormalized(cls):
+        return 4
+    def Segmentation(cls):
+        return 5
+    def SurfaceNormals(cls):
+        return 6
+    def Infrared(cls):
+        return 7
+    def OpticalFlow(cls):
+        return 8
+    def OpticalFlowVis(cls):
+        return 9
 
-    """
-    
-    Attributes:
-        DepthPerspective (int): Description
-        DepthPlanner (int): Description
-        DepthVis (int): Description
-        DisparityNormalized (int): Description
-        Infrared (int): Description
-        Scene (int): Description
-        Segmentation (int): Description
-        SurfaceNormals (int): Description
-    """
+    def __getattr__(self, key):
+        if key == 'DepthPlanner':
+            print('\033[31m'+"DepthPlanner has been (correctly) renamed to DepthPlanar. Please use ImageType.DepthPlanar instead."+'\033[0m')
+            raise AttributeError
 
+class ImageType(metaclass=_ImageType):
     Scene = 0
-    DepthPlanner = 1
+    DepthPlanar = 1
     DepthPerspective = 2
     DepthVis = 3
     DisparityNormalized = 4
     Segmentation = 5
     SurfaceNormals = 6
     Infrared = 7
+    OpticalFlow = 8
+    OpticalFlowVis = 9
 
 
 class DrivetrainType:

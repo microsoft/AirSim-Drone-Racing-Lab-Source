@@ -64,7 +64,7 @@ ASimModeBase::ASimModeBase()
     }
     else
         loading_screen_widget_ = nullptr;
-
+    
     static ConstructorHelpers::FObjectFinder<UMaterial> domain_rand_mat_finder(TEXT("Material'/AirSim/HUDAssets/DomainRandomizationMaterial.DomainRandomizationMaterial'"));
     if (domain_rand_mat_finder.Succeeded()) {
         domain_rand_material_ = domain_rand_mat_finder.Object;

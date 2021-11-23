@@ -106,8 +106,8 @@ namespace airlib
         virtual bool getDisqualified(const std::string& racer_name) = 0;
         virtual int getLastGatePassed(const std::string& racer_name) = 0;
         virtual bool setTextureFromUrl(std::string& object_name, std::string& url) = 0;
-        virtual bool setMeshMaterial(const std::string& object_name, const std::string& material_name) = 0;
-        virtual bool setMeshMaterialFromTexture(const std::string& object_name, const std::string& texture_path) = 0;
+        virtual bool setObjectMaterial(const std::string& object_name, const std::string& material_name) = 0;
+        virtual bool setObjectMaterialFromTexture(const std::string& object_name, const std::string& texture_path) = 0;
     };
 }
 } //namespace
