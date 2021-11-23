@@ -215,29 +215,29 @@ class VehicleClient:
             "simSwapTextures", tags, tex_id, component_id, material_id
         )
 
-    def simSetMeshMaterial(self, object_name, material_name):
+    def simSetObjectMaterial(self, object_name, material_name):
         """
+        Runtime Swap Texture API
+        See https://microsoft.github.io/AirSim/retexturing/ for details
         Args:
-            object_name (str): Name of object (mesh) whose material is to be changed
-            material_name (str): Full path to the desired material asset
-
+            object_name (str): name of object to set material for
+            material_name (str): name of material to set for object
         Returns:
-            success[bool]: True if change succeeded
+            bool: True if material was set
         """
-        return self.client.call("simSetMeshMaterial", object_name, material_name)
+        return self.client.call("simSetObjectMaterial", object_name, material_name)
 
-    def simSetMeshMaterialFromTexture(self, object_name, texture_path):
+    def simSetObjectMaterialFromTexture(self, object_name, texture_path):
         """
+        Runtime Swap Texture API
+        See https://microsoft.github.io/AirSim/retexturing/ for details
         Args:
-            object_name (str): Name of object (mesh) whose material is to be changed
-            material_name (str): Full path to the texture (PNG file) from which material is created
-
+            object_name (str): name of object to set material for
+            texture_path (str): path to texture to set for object
         Returns:
-            success[bool]: True if change succeeded
+            bool: True if material was set
         """
-        return self.client.call(
-            "simSetMeshMaterialFromTexture", object_name, texture_path
-        )
+        return self.client.call("simSetObjectMaterialFromTexture", object_name, texture_path)
 
     # time-of-day control
     def simSetTimeOfDay(
