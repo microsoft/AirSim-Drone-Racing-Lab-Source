@@ -1,1 +1,5 @@
 Unreal/Plugins/ filter=lfs diff=lfs merge=lfs -text
+Unreal/Plugins/*umap filter=lfs diff=lfs merge=lfs -text
+Unreal/Plugins/ZhangJiaJie/Content/ZhangJiajieMountain/Maps/ZhangJiaJie_Medium.umap filter=lfs diff=lfs merge=lfs -text
+Unreal/Plugins/ZhangJiaJie/Content/ZhangJiajieMountain/Maps/Final_Tier_3.umap filter=lfs diff=lfs merge=lfs -text
+Unreal/Plugins/ZhangJiaJie/Content/ZhangJiajieMountain/Maps/Qualifier_Tier_2.umap filter=lfs diff=lfs merge=lfs -text
